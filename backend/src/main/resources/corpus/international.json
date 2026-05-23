@@ -39,9 +39,9 @@
     "jurisdiction": "INTERNATIONAL",
     "instrument": "Police encounters — general guidance",
     "section": "General",
-    "title": "Police stops and searches",
+    "title": "Police interactions and searches",
     "text": "During police encounters, individuals should remain calm, ask whether they are free to leave, and avoid resisting. Search and seizure powers differ widely by jurisdiction; note officer names, time, and location. Report misconduct through official police oversight or human-rights bodies where available.",
-    "tags": ["police_stop", "search", "phone", "fundamental_rights"]
+    "tags": ["police_interaction", "search", "phone", "fundamental_rights"]
   },
   {
     "id": "intl-legal-aid",

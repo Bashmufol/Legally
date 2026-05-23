@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.config.LegallyProperties;
 import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
+import com.legally.model.LegalDocumentType;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.GeminiLegalResponse;
 import org.slf4j.Logger;
@@ -167,39 +168,175 @@ public class GeminiService {
 
     public String generateDemandLetter(
             String facts, String scenario, JurisdictionContext jurisdiction, List<LawChunk> chunks) throws Exception {
+        return generateLegalDocument(
+                LegalDocumentType.DEMAND_LETTER,
+                LegalDocumentType.DEMAND_LETTER.getDisplayName(),
+                facts,
+                null,
+                null,
+                null,
+                jurisdiction,
+                chunks);
+    }
+
+    public String generateLegalDocument(
+            LegalDocumentType documentType,
+            String title,
+            String facts,
+            String additionalDetails,
+            String partyAName,
+            String partyBName,
+            JurisdictionContext jurisdiction,
+            List<LawChunk> chunks) throws Exception {
         String apiKey = properties.getGemini().getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            return defaultDemandLetter(facts);
+            return fallbackLegalDocument(documentType, title, facts, jurisdiction);
         }
 
-        String prompt = """
-                Draft a formal pre-action demand letter for a %s (%s) %s dispute.
-                Use plain formal English appropriate for that jurisdiction. Include: date placeholder, parties, facts, legal basis from corpus only, demanded remedy, reasonable deadline, and signature block.
-                Facts: %s
-
-                Corpus excerpts:
-                %s
-                """.formatted(
-                jurisdiction.getCountryName(),
-                jurisdiction.getRegionName(),
-                scenario,
+        String prompt = buildLegalDocumentPrompt(
+                documentType,
+                title,
                 facts,
-                formatChunks(chunks));
+                additionalDetails,
+                partyAName,
+                partyBName,
+                jurisdiction,
+                chunks);
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
-                "generationConfig", Map.of("temperature", 0.3)
+                "generationConfig", Map.of("temperature", 0.25)
         );
 
         try {
             String responseBody = callGemini(apiKey, body);
             JsonNode root = objectMapper.readTree(responseBody);
-            return root.path("candidates").path(0).path("content").path("parts").path(0).path("text")
-                    .asText(defaultDemandLetter(facts));
+            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text")
+                    .asText("");
+            if (text.isBlank()) {
+                return fallbackLegalDocument(documentType, title, facts, jurisdiction);
+            }
+            return stripCodeFences(text);
         } catch (ResourceAccessException e) {
-            log.warn("Gemini unreachable for demand letter: {}", e.getMessage());
+            log.warn("Gemini unreachable for legal document: {}", e.getMessage());
+            return fallbackLegalDocument(documentType, title, facts, jurisdiction);
+        }
+    }
+
+    private String buildLegalDocumentPrompt(
+            LegalDocumentType documentType,
+            String title,
+            String facts,
+            String additionalDetails,
+            String partyAName,
+            String partyBName,
+            JurisdictionContext jurisdiction,
+            List<LawChunk> chunks) {
+        String docInstructions = documentInstructions(documentType);
+        String parties = "";
+        if (partyAName != null && !partyAName.isBlank()) {
+            parties += "Party A / first party: " + partyAName + "\n";
+        }
+        if (partyBName != null && !partyBName.isBlank()) {
+            parties += "Party B / second party: " + partyBName + "\n";
+        }
+        String extras = additionalDetails != null && !additionalDetails.isBlank()
+                ? "\nAdditional requirements:\n" + additionalDetails
+                : "";
+
+        return """
+                You are Legally, drafting a formal legal document template (NOT legal advice).
+                
+                Document type: %s
+                Document title: %s
+                Jurisdiction: %s — %s (country code %s, region %s)
+                
+                %s
+                
+                Rules:
+                1. Draft the complete document in clear formal English appropriate for the stated jurisdiction.
+                2. Ground obligations and rights in the provided corpus excerpts where relevant; cite section references inline in parentheses.
+                3. Use placeholders in square brackets only where user-specific data is missing (e.g. [PARTY A NAME], [DATE], [PROPERTY ADDRESS]).
+                4. Include standard sections: title, parties, recitals/background, operative terms, signatures, witness lines if customary.
+                5. Add a short footer line: "Generated by Legally — review with a licensed lawyer before execution."
+                6. Output ONLY the document text (no JSON, no markdown code fences).
+                
+                %s
+                User facts and requirements:
+                %s
+                %s
+                
+                Corpus excerpts (use for legal grounding):
+                %s
+                """.formatted(
+                documentType.name(),
+                title,
+                jurisdiction.getCountryName(),
+                jurisdiction.getRegionName(),
+                jurisdiction.getCountryCode(),
+                jurisdiction.getRegionCode(),
+                docInstructions,
+                parties,
+                facts,
+                extras,
+                formatChunks(chunks));
+    }
+
+    private String documentInstructions(LegalDocumentType type) {
+        return switch (type) {
+            case DEMAND_LETTER -> "Structure as a pre-action demand letter: date, parties, facts, legal basis, demanded remedy, deadline, signature.";
+            case RENT_AGREEMENT -> "Structure as a residential tenancy/lease: premises, term, rent, deposit, repairs, termination, governing law clause.";
+            case LAND_PURCHASE -> "Structure as land sale agreement: property description, purchase price, deposit, title obligations, completion, warranties, dispute resolution.";
+            case PRENUPTIAL -> "Structure as prenuptial agreement: parties, disclosure, separate property, spousal support waiver/limitation, estate rights, governing law; note enforceability varies.";
+            case EMPLOYMENT_CONTRACT -> "Structure as employment agreement: role, duties, compensation, benefits, confidentiality, termination, notice, governing law.";
+            case GENERAL_CONTRACT -> "Structure as a general commercial contract with definitions, obligations, payment, term, breach, remedies, governing law.";
+            case NDA -> "Structure as mutual or unilateral NDA: confidential information definition, obligations, exclusions, term, remedies.";
+            case POWER_OF_ATTORNEY -> "Structure as limited or general power of attorney appropriate to the jurisdiction; include scope, duration, revocation.";
+            case AFFIDAVIT -> "Structure as affidavit/sworn statement: deponent details, numbered paragraphs of facts, oath block, signature.";
+            case OTHER -> "Draft the custom legal document described by the user with appropriate formal structure for the jurisdiction.";
+        };
+    }
+
+    private String stripCodeFences(String text) {
+        return text.replace("```", "").trim();
+    }
+
+    private String fallbackLegalDocument(
+            LegalDocumentType documentType, String title, String facts, JurisdictionContext jurisdiction) {
+        if (documentType == LegalDocumentType.DEMAND_LETTER) {
             return defaultDemandLetter(facts);
         }
+        return """
+                %s
+                Jurisdiction: %s (%s)
+                
+                [PARTY A NAME] ("Party A")
+                [PARTY B NAME] ("Party B")
+                
+                BACKGROUND
+                %s
+                
+                OPERATIVE TERMS
+                1. [Insert key terms based on the facts above and local law.]
+                2. This template was generated without AI — configure GEMINI_API_KEY for a full draft.
+                
+                GOVERNING LAW
+                This agreement shall be governed by the laws of %s.
+                
+                SIGNATURES
+                
+                _________________________          _________________________
+                Party A                            Party B
+                Date: [DATE]                       Date: [DATE]
+                
+                ---
+                Generated by Legally — review with a licensed lawyer before execution.
+                """.formatted(
+                title.toUpperCase(Locale.ROOT),
+                jurisdiction.displayLabel(),
+                documentType.getDisplayName(),
+                facts,
+                jurisdiction.getCountryName());
     }
 
     private String callGemini(String apiKey, Map<String, Object> body) {

@@ -3,11 +3,14 @@ import type {
   DemandLetterResponse,
   HistoryItem,
   JurisdictionFields,
+  LegalDocumentRequest,
+  LegalDocumentResponse,
   MediaRef,
   Scenario,
   UploadResponse,
 } from '../types'
 import type { JurisdictionPayload } from '../lib/jurisdiction'
+import { parseApiErrorResponse, UserFacingError } from '../lib/errors'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -26,27 +29,19 @@ async function authHeaders(): Promise<HeadersInit> {
   return headers
 }
 
-async function parseError(res: Response): Promise<string> {
-  try {
-    const data = await res.json()
-    return data.error || res.statusText
-  } catch {
-    return res.statusText
-  }
-}
-
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
   try {
     return await fetch(input, init)
-  } catch (err) {
-    const hint =
-      `Cannot reach the API at ${API_URL}. ` +
-      'Ensure the backend is running on port 8080, then open the app at ' +
-      'http://localhost:5173 (not 127.0.0.1) so CORS matches.'
-    if (err instanceof TypeError) {
-      throw new Error(hint)
-    }
-    throw err
+  } catch {
+    throw new UserFacingError(
+      "We couldn't reach Legally right now. Check your internet connection and try again.",
+    )
+  }
+}
+
+async function ensureOk(res: Response): Promise<void> {
+  if (!res.ok) {
+    throw new UserFacingError(await parseApiErrorResponse(res))
   }
 }
 
@@ -73,12 +68,7 @@ export async function consult(
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify(body),
   })
-  if (res.status === 401) {
-    throw new Error(
-      'Unauthorized: sign in failed or Firebase token missing. Check frontend .env Firebase keys and Anonymous auth in Firebase Console.',
-    )
-  }
-  if (!res.ok) throw new Error(await parseError(res))
+  await ensureOk(res)
   return res.json()
 }
 
@@ -90,15 +80,33 @@ export async function uploadFile(file: File): Promise<UploadResponse> {
     headers: await authHeaders(),
     body: form,
   })
-  if (res.status === 401) {
-    throw new Error('Unauthorized: wait for secure session or check Firebase Anonymous auth.')
-  }
-  if (!res.ok) throw new Error(await parseError(res))
+  await ensureOk(res)
   const data: UploadResponse = await res.json()
   if (data.storageType === 'local' && data.url.startsWith('/')) {
     return { ...data, url: `${API_URL}${data.url}` }
   }
   return data
+}
+
+export async function generateLegalDocument(
+  request: LegalDocumentRequest,
+  jurisdiction?: JurisdictionPayload,
+): Promise<LegalDocumentResponse> {
+  const body: Record<string, unknown> = { ...request }
+  if (jurisdiction) {
+    body.countryCode = jurisdiction.countryCode
+    body.countryName = jurisdiction.countryName
+    body.regionCode = jurisdiction.regionCode
+    body.regionName = jurisdiction.regionName
+    body.locationSource = jurisdiction.locationSource
+  }
+  const res = await apiFetch(`${API_URL}/api/documents/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify(body),
+  })
+  await ensureOk(res)
+  return res.json()
 }
 
 export async function generateDemandLetter(
@@ -113,7 +121,7 @@ export async function generateDemandLetter(
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
     body: JSON.stringify({ facts, scenario, senderName, recipientName, ...jurisdiction }),
   })
-  if (!res.ok) throw new Error(await parseError(res))
+  await ensureOk(res)
   return res.json()
 }
 
@@ -121,6 +129,6 @@ export async function fetchConsultationHistory(): Promise<HistoryItem[]> {
   const res = await apiFetch(`${API_URL}/api/history/consultations`, {
     headers: await authHeaders(),
   })
-  if (!res.ok) throw new Error(await parseError(res))
+  await ensureOk(res)
   return res.json()
 }

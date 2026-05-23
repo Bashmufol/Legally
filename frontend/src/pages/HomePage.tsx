@@ -25,6 +25,12 @@ export default function HomePage() {
               <ArrowRight className="w-5 h-5" />
             </Link>
             <Link
+              to="/documents"
+              className="inline-flex items-center gap-2 rounded-lg border border-white/30 px-6 py-3 font-medium hover:bg-white/10"
+            >
+              Draft documents
+            </Link>
+            <Link
               to="/about"
               className="inline-flex items-center gap-2 rounded-lg border border-white/30 px-6 py-3 font-medium hover:bg-white/10"
             >

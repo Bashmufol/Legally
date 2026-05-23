@@ -10,6 +10,7 @@ import { useJurisdiction } from '../hooks/useJurisdiction'
 import ResultCards from '../components/ResultCards'
 import DemandLetterModal from '../components/DemandLetterModal'
 import { SCENARIO_LABELS } from '../data/scenarios'
+import { toUserMessage } from '../lib/errors'
 import type { ConsultResponse, MediaRef, Scenario } from '../types'
 
 export default function ConsultPage() {
@@ -29,7 +30,9 @@ export default function ConsultPage() {
 
   useEffect(() => {
     if (configured && !user && !authLoading) {
-      signInGuest().catch(() => setError('Could not start secure session. Check Firebase config.'))
+      signInGuest().catch(() =>
+        setError("We couldn't sign you in securely. Please refresh the page and try again."),
+      )
     }
   }, [configured, user, authLoading, signInGuest])
 
@@ -57,7 +60,7 @@ export default function ConsultPage() {
       const res = await consult(message, scenario, media, jurisdiction)
       setResult(res)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Consultation failed')
+      setError(toUserMessage(e))
     } finally {
       setLoading(false)
     }
@@ -93,7 +96,7 @@ export default function ConsultPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={6}
-            placeholder="e.g. Police stopped me and demanded my phone password…"
+            placeholder="e.g. During a police interaction they demanded my phone password…"
             className="w-full rounded-xl border border-legally-navy/15 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-legally-gold/50"
           />
           <UploadZone onUploaded={addMedia} disabled={loading} />
@@ -126,13 +129,15 @@ export default function ConsultPage() {
           {result ? (
             <>
               {result.demandLetterEligible && (
-                <button
-                  type="button"
-                  onClick={() => setLetterOpen(true)}
-                  className="mb-4 w-full rounded-lg border-2 border-legally-gold text-legally-navy font-semibold py-2 text-sm hover:bg-legally-gold/10"
-                >
-                  Generate demand letter
-                </button>
+                <div className="mb-4 flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLetterOpen(true)}
+                    className="flex-1 rounded-lg border-2 border-legally-gold text-legally-navy font-semibold py-2 text-sm hover:bg-legally-gold/10"
+                  >
+                    Generate demand letter
+                  </button>
+                </div>
               )}
               <ResultCards result={result} />
             </>

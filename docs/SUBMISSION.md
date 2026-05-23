@@ -30,9 +30,9 @@ Legally improves access to justice for Nigerians who cannot afford private couns
 
 ## Demo script (2–3 minutes)
 
-### 1. Police stop / phone search
+### 1. Police interaction / phone search
 
-- Scenario: **Police stop**
+- Scenario: **Police interaction**
 - Input: “Officer demanded my phone and password on the road in Ilorin”
 - Show: legal analysis citing Constitution / Police Act / ACJA, steps, Police PRO & NHRC contacts
 

@@ -170,8 +170,10 @@ Expected: `{"status":"UP"}`
 |-------|-----|
 | Container failed to start | Check **Logs** in Cloud Run; often missing env or wrong secret path |
 | Cloud SQL connection refused | Confirm `--add-cloudsql-instances` and `roles/cloudsql.client` |
-| 403 on API from browser | Update `CORS_ALLOWED_ORIGINS` with exact Vercel URL |
+| 403 on API from browser / "Cannot reach the API" | **CORS:** Cloud Run must list every frontend origin (comma-separated, no trailing slash). Example: `https://your-app.vercel.app,http://localhost:5173,http://127.0.0.1:5173`. Update with `gcloud run services update legally-api --region us-east4 --update-env-vars "CORS_ALLOWED_ORIGINS=..."` |
+| Local dev + remote API fails | Use Vite proxy: in `frontend/.env` set `VITE_USE_API_PROXY=true`, `VITE_PROXY_TARGET=https://your-run.app`, `VITE_API_URL=`, restart `npm run dev` |
 | 401 from frontend | Firebase Anonymous enabled; `FIREBASE_REQUIRE_AUTH=true`; valid `VITE_FIREBASE_*` |
+| 403 Forbidden on API | Often `FIREBASE_ANONYMOUS_ONLY=true` with a non-anonymous browser session — set `FIREBASE_ANONYMOUS_ONLY=false` on Cloud Run, or click **New session** in the app header; enable **Anonymous** provider in Firebase Console → Authentication → Sign-in method |
 | Firebase init failed | Secret mount path must match `FIREBASE_CREDENTIALS_PATH` |
 | Wrong port | App listens on `PORT` or `8080`; deploy with `--port 8080` |
 

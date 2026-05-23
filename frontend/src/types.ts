@@ -1,5 +1,5 @@
 export type Scenario =
-  | 'police_stop'
+  | 'police_interaction'
   | 'tenancy'
   | 'land'
   | 'employment'
@@ -82,6 +82,37 @@ export interface UploadResponse {
 export interface DemandLetterResponse {
   letter: string
   disclaimer: string
+}
+
+export type LegalDocumentTypeId =
+  | 'DEMAND_LETTER'
+  | 'RENT_AGREEMENT'
+  | 'LAND_PURCHASE'
+  | 'PRENUPTIAL'
+  | 'EMPLOYMENT_CONTRACT'
+  | 'GENERAL_CONTRACT'
+  | 'NDA'
+  | 'POWER_OF_ATTORNEY'
+  | 'AFFIDAVIT'
+  | 'OTHER'
+
+export interface LegalDocumentRequest {
+  documentType: LegalDocumentTypeId
+  facts: string
+  additionalDetails?: string
+  customDocumentName?: string
+  partyAName?: string
+  partyBName?: string
+}
+
+export interface LegalDocumentResponse {
+  documentType: string
+  title: string
+  content: string
+  disclaimer: string
+  jurisdictionCountry?: string
+  jurisdictionRegion?: string
+  locationSource?: string
 }
 
 export interface HistoryItem {

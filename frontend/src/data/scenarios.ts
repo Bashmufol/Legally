@@ -21,8 +21,8 @@ export interface SituationCard {
 
 export const SITUATIONS: SituationCard[] = [
   {
-    id: 'police_stop',
-    title: 'Police stop',
+    id: 'police_interaction',
+    title: 'Police interaction',
     desc: 'Unlawful search, phone checks, harassment on the road',
     icon: Shield,
   },

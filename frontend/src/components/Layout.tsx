@@ -16,6 +16,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const nav = [
     { to: '/', label: 'Home' },
     { to: '/consult', label: 'Consult' },
+    { to: '/documents', label: 'Documents' },
     { to: '/about', label: 'About' },
   ]
 

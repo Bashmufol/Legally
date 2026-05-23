@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import { FileUp, X } from 'lucide-react'
 import { uploadFile } from '../api/client'
+import { toUserMessage } from '../lib/errors'
 import type { MediaRef } from '../types'
 
 interface Props {
@@ -28,7 +29,7 @@ export default function UploadZone({ onUploaded, disabled }: Props) {
           storageType: res.storageType,
         })
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'Upload failed')
+        setError(toUserMessage(e))
       } finally {
         setUploading(false)
       }

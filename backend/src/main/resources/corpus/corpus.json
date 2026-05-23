@@ -6,7 +6,7 @@
     "section": "Section 35",
     "title": "Right to personal liberty",
     "text": "Every person has the right to personal liberty. No person shall be deprived of his liberty except in accordance with a procedure permitted by law. A person arrested or detained shall be informed in writing within twenty-four hours of the facts and grounds for his arrest or detention.",
-    "tags": ["police_stop", "fundamental_rights", "arrest"]
+    "tags": ["police_interaction", "fundamental_rights", "arrest"]
   },
   {
     "id": "const-s36",
@@ -15,7 +15,7 @@
     "section": "Section 36",
     "title": "Right to fair hearing",
     "text": "In the determination of his civil rights and obligations, including any question or determination by or against any government or authority, a person shall be entitled to a fair hearing within a reasonable time by a court or other tribunal established by law.",
-    "tags": ["fundamental_rights", "tenancy", "land", "police_stop"]
+    "tags": ["fundamental_rights", "tenancy", "land", "police_interaction"]
   },
   {
     "id": "const-s43",
@@ -33,7 +33,7 @@
     "section": "Section 44",
     "title": "Compulsory acquisition and privacy",
     "text": "No moveable property or any interest in an immovable property shall be taken possession of compulsorily and no right over or interest in any such property shall be acquired compulsorily in any part of Nigeria except under a law that makes provision for compensation and for a right of access to the court. Nothing in subsection (1) shall invalidate any law that is reasonably justifiable in a democratic society for the purpose of protecting public safety, public order, public morality or public health.",
-    "tags": ["land", "property", "police_stop"]
+    "tags": ["land", "property", "police_interaction"]
   },
   {
     "id": "police-act-s4",
@@ -42,7 +42,7 @@
     "section": "Section 4",
     "title": "Duties of the Police",
     "text": "The Police shall prevent and detect crime, preserve law and order, protect life and property, and carry out such other duties as may be imposed by law, with accountability to the public and respect for human rights.",
-    "tags": ["police_stop"]
+    "tags": ["police_interaction"]
   },
   {
     "id": "police-act-s60",
@@ -51,7 +51,7 @@
     "section": "Section 60",
     "title": "Search without warrant — conditions",
     "text": "A police officer may search any person or premises without a warrant where he has reasonable grounds to suspect that an offence has been committed and that evidence may be found. The search must be conducted with decency and respect for personal dignity. A search of a person should be conducted by an officer of the same sex where practicable.",
-    "tags": ["police_stop", "search"]
+    "tags": ["police_interaction", "search"]
   },
   {
     "id": "police-act-s61",
@@ -60,7 +60,7 @@
     "section": "Section 61",
     "title": "Seizure of articles",
     "text": "Where a police officer finds on a person or premises any article which he reasonably suspects to be stolen, unlawfully obtained, or evidence of an offence, he may seize it and must provide a receipt. Seizure must be proportionate to the suspected offence.",
-    "tags": ["police_stop", "search"]
+    "tags": ["police_interaction", "search"]
   },
   {
     "id": "acja-s70",
@@ -69,7 +69,7 @@
     "section": "Section 70",
     "title": "Search of phones and digital devices",
     "text": "A suspect's phone or digital device shall not be searched without a warrant except where the owner consents, or in exigent circumstances where delay would result in loss of evidence relating to a serious offence. Officers should document the basis for any search.",
-    "tags": ["police_stop", "search", "phone"]
+    "tags": ["police_interaction", "search", "phone"]
   },
   {
     "id": "acja-s8",
@@ -78,7 +78,7 @@
     "section": "Section 8",
     "title": "Arrest without warrant",
     "text": "A police officer may arrest without warrant any person who commits an offence in his presence, or whom he reasonably suspects of having committed a felony, provided the arrest is necessary. The person must be informed of the reason for arrest promptly.",
-    "tags": ["police_stop", "arrest"]
+    "tags": ["police_interaction", "arrest"]
   },
   {
     "id": "cybercrimes-s37",
@@ -87,7 +87,7 @@
     "section": "Section 37",
     "title": "Privacy of communications",
     "text": "Any person who intentionally intercepts or discloses private communications without lawful authority commits an offence. Coerced disclosure of passwords or device access may engage criminal and civil liability depending on circumstances.",
-    "tags": ["police_stop", "phone"]
+    "tags": ["police_interaction", "phone"]
   },
   {
     "id": "lua-s1",
@@ -168,7 +168,7 @@
     "section": "Complaints",
     "title": "Police misconduct complaints",
     "text": "Complaints against police conduct in Kwara may be lodged with the Police Public Relations Officer, the Kwara State Police Command, the Police Service Commission, or the National Human Rights Commission. Preserve video, audio, and witness details.",
-    "tags": ["police_stop", "kwara_government"]
+    "tags": ["police_interaction", "kwara_government"]
   },
   {
     "id": "nhrc-s5",
@@ -177,7 +177,7 @@
     "section": "Section 5",
     "title": "Functions of the Commission",
     "text": "The Commission shall monitor and investigate allegations of human rights violations, assist victims, and make recommendations to appropriate authorities including prosecution where warranted.",
-    "tags": ["police_stop", "fundamental_rights", "legal_aid"]
+    "tags": ["police_interaction", "fundamental_rights", "legal_aid"]
   },
   {
     "id": "legal-aid-council",

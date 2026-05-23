@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Mic, Square, X } from 'lucide-react'
 import { uploadFile } from '../api/client'
+import { toUserMessage } from '../lib/errors'
 import type { MediaRef } from '../types'
 
 interface Props {
@@ -58,8 +59,8 @@ export default function VoiceRecorder({ onRecorded, disabled }: Props) {
             storageType: res.storageType,
           })
           setStatus('Voice note attached')
-        } catch {
-          setStatus('Failed to upload recording')
+        } catch (e) {
+          setStatus(toUserMessage(e))
         }
       }
 
@@ -68,7 +69,9 @@ export default function VoiceRecorder({ onRecorded, disabled }: Props) {
       setRecording(true)
       setStatus('Recording… tap Stop to save or Cancel to discard')
     } catch {
-      setStatus('Microphone access denied')
+      setStatus(
+        'We need microphone access to record your voice. Allow the microphone in your browser settings and try again.',
+      )
     }
   }
 
