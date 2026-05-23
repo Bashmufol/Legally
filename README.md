@@ -1,8 +1,8 @@
-# Legally — AI-Powered Legal Advisor (Nigeria)
+# Legally — AI-Powered Legal Advisor
 
 GDG CareerFest 2026 · **SDG 16** (Peace, Justice, and Strong Institutions)
 
-Legally helps Nigerians understand their rights using **Google Gemini API**, **PostgreSQL on Cloud SQL** (provisioned via Firebase SQL Connect — **Option A: direct JDBC**), **Firebase Anonymous Auth**, and **Firebase Storage**.
+Legally helps people understand their rights using **Google Gemini API**, **PostgreSQL on Cloud SQL** (provisioned via Firebase SQL Connect — **Option A: direct JDBC**), **Firebase Anonymous Auth**, and **Firebase Storage**. The app supports **global jurisdictions**: country and state/province are detected from device location (with manual fallback), and explicit mentions in the user’s text or media override device location.
 
 ## Stack
 
@@ -97,6 +97,19 @@ See [backend/.env.example](backend/.env.example), [backend/.env.cloudsql.example
 | `media_uploads` | Upload metadata |
 
 Legal corpus and contacts remain in bundled JSON (`backend/src/main/resources/`).
+
+### Global jurisdiction
+
+| Source | Priority |
+|--------|----------|
+| Country/state mentioned in message or media | Highest (`input_override`) |
+| Device geolocation + reverse geocode (frontend) | Next (`device`) |
+| Manual country/state picker | User override (`manual`) |
+| International generic corpus | Fallback (`default_fallback`) |
+
+- Nigerian federal and Kwara state chunks live in `corpus/corpus.json` (tagged `countryCode: NG` via normalization).
+- Generic international principles: `corpus/international.json`.
+- Add country-specific corpora under `corpus/{country}/` as JSON arrays with `countryCode`, `regionCode`, and `tags`.
 
 ## Google tools (hackathon)
 

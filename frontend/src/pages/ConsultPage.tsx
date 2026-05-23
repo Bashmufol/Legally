@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext'
 import type { HistoryItem } from '../types'
 import UploadZone from '../components/UploadZone'
 import VoiceRecorder from '../components/VoiceRecorder'
+import { useJurisdiction } from '../hooks/useJurisdiction'
 import ResultCards from '../components/ResultCards'
 import DemandLetterModal from '../components/DemandLetterModal'
 import { SCENARIO_LABELS } from '../data/scenarios'
@@ -24,6 +25,7 @@ export default function ConsultPage() {
   const [letterOpen, setLetterOpen] = useState(false)
   const [history, setHistory] = useState<HistoryItem[]>([])
   const { user, configured, loading: authLoading, signInGuest } = useAuth()
+  const { jurisdiction } = useJurisdiction()
 
   useEffect(() => {
     if (configured && !user && !authLoading) {
@@ -52,7 +54,7 @@ export default function ConsultPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await consult(message, scenario, media)
+      const res = await consult(message, scenario, media, jurisdiction)
       setResult(res)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Consultation failed')
@@ -167,6 +169,12 @@ export default function ConsultPage() {
         facts={message}
         open={letterOpen}
         onClose={() => setLetterOpen(false)}
+        jurisdiction={{
+          countryCode: jurisdiction.countryCode,
+          countryName: jurisdiction.countryName,
+          regionCode: jurisdiction.regionCode,
+          regionName: jurisdiction.regionName,
+        }}
       />
     </div>
   )

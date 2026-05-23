@@ -1,7 +1,9 @@
 package com.legally.service;
 
 import com.legally.entity.DemandLetterRecord;
+import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
+import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.DemandLetterRequest;
 import com.legally.model.dto.DemandLetterResponse;
 import com.legally.repository.DemandLetterRecordRepository;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class DemandLetterService {
@@ -19,16 +22,19 @@ public class DemandLetterService {
 
     private final CorpusService corpusService;
     private final GeminiService geminiService;
+    private final JurisdictionService jurisdictionService;
     private final DemandLetterRecordRepository demandLetterRecordRepository;
     private final UserService userService;
 
     public DemandLetterService(
             CorpusService corpusService,
             GeminiService geminiService,
+            JurisdictionService jurisdictionService,
             DemandLetterRecordRepository demandLetterRecordRepository,
             UserService userService) {
         this.corpusService = corpusService;
         this.geminiService = geminiService;
+        this.jurisdictionService = jurisdictionService;
         this.demandLetterRecordRepository = demandLetterRecordRepository;
         this.userService = userService;
     }
@@ -37,7 +43,23 @@ public class DemandLetterService {
     public DemandLetterResponse generate(DemandLetterRequest request) throws Exception {
         userService.syncCurrentUser();
 
+        ConsultRequest jurisdictionProbe = new ConsultRequest();
+        jurisdictionProbe.setMessage(request.getFacts());
+        jurisdictionProbe.setCountryCode(request.getCountryCode());
+        jurisdictionProbe.setCountryName(request.getCountryName());
+        jurisdictionProbe.setRegionCode(request.getRegionCode());
+        jurisdictionProbe.setRegionName(request.getRegionName());
+        JurisdictionContext jurisdiction = jurisdictionService.resolve(jurisdictionProbe);
+        if (jurisdiction.getLocationSource() != JurisdictionContext.LocationSource.input_override) {
+            Optional<JurisdictionContext> detected = geminiService.detectJurisdictionFromInputs(
+                    request.getFacts(), List.of(), jurisdiction);
+            jurisdiction = detected
+                    .map(jurisdictionService::applyDetectedOverride)
+                    .orElse(jurisdiction);
+        }
+
         List<LawChunk> chunks = corpusService.retrieve(
+                jurisdiction,
                 request.getScenario() != null ? request.getScenario() : "tenancy",
                 request.getFacts(),
                 5);
@@ -45,6 +67,7 @@ public class DemandLetterService {
         String letter = geminiService.generateDemandLetter(
                 request.getFacts(),
                 request.getScenario(),
+                jurisdiction,
                 chunks);
 
         if (request.getSenderName() != null && !request.getSenderName().isBlank()) {

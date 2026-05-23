@@ -48,6 +48,15 @@ export interface ContactCard {
   notes: string
 }
 
+export interface JurisdictionFields {
+  countryCode?: string
+  countryName?: string
+  regionCode?: string
+  regionName?: string
+  locationSource?: string
+  jurisdictionOverride?: boolean
+}
+
 export interface ConsultResponse {
   summary: string
   legalAnalysis: LegalPoint[]
@@ -57,6 +66,10 @@ export interface ConsultResponse {
   demandLetterEligible: boolean
   confidence: string
   disclaimer: string
+  jurisdictionCountry?: string
+  jurisdictionRegion?: string
+  locationSource?: string
+  corpusLimited?: boolean
 }
 
 export interface UploadResponse {

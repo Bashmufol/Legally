@@ -2,10 +2,12 @@ import type {
   ConsultResponse,
   DemandLetterResponse,
   HistoryItem,
+  JurisdictionFields,
   MediaRef,
   Scenario,
   UploadResponse,
 } from '../types'
+import type { JurisdictionPayload } from '../lib/jurisdiction'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -52,11 +54,24 @@ export async function consult(
   message: string,
   scenario: Scenario,
   media: MediaRef[] = [],
+  jurisdiction?: JurisdictionPayload,
 ): Promise<ConsultResponse> {
+  const body: Record<string, unknown> = {
+    message,
+    scenario: scenario === 'general' ? null : scenario,
+    media,
+  }
+  if (jurisdiction) {
+    body.countryCode = jurisdiction.countryCode
+    body.countryName = jurisdiction.countryName
+    body.regionCode = jurisdiction.regionCode
+    body.regionName = jurisdiction.regionName
+    body.locationSource = jurisdiction.locationSource
+  }
   const res = await apiFetch(`${API_URL}/api/consult`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ message, scenario: scenario === 'general' ? null : scenario, media }),
+    body: JSON.stringify(body),
   })
   if (res.status === 401) {
     throw new Error(
@@ -91,11 +106,12 @@ export async function generateDemandLetter(
   scenario = 'tenancy',
   senderName?: string,
   recipientName?: string,
+  jurisdiction?: JurisdictionFields,
 ): Promise<DemandLetterResponse> {
   const res = await apiFetch(`${API_URL}/api/demand-letter`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
-    body: JSON.stringify({ facts, scenario, senderName, recipientName }),
+    body: JSON.stringify({ facts, scenario, senderName, recipientName, ...jurisdiction }),
   })
   if (!res.ok) throw new Error(await parseError(res))
   return res.json()

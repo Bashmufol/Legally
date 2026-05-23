@@ -10,6 +10,10 @@ public class DemandLetterRequest {
     private String recipientName;
     private String senderName;
     private String scenario = "tenancy";
+    private String countryCode;
+    private String countryName;
+    private String regionCode;
+    private String regionName;
 
     public String getFacts() {
         return facts;
@@ -41,5 +45,37 @@ public class DemandLetterRequest {
 
     public void setScenario(String scenario) {
         this.scenario = scenario;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getCountryName() {
+        return countryName;
+    }
+
+    public void setCountryName(String countryName) {
+        this.countryName = countryName;
+    }
+
+    public String getRegionCode() {
+        return regionCode;
+    }
+
+    public void setRegionCode(String regionCode) {
+        this.regionCode = regionCode;
+    }
+
+    public String getRegionName() {
+        return regionName;
+    }
+
+    public void setRegionName(String regionName) {
+        this.regionName = regionName;
     }
 }

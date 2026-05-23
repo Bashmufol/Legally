@@ -8,7 +8,12 @@ import java.util.List;
 public class LawChunk {
 
     private String id;
+    /** Legacy: FEDERAL | KWARA — kept for Nigerian corpus compatibility. */
     private String jurisdiction;
+    /** ISO country code, e.g. NG, US, INT. */
+    private String countryCode;
+    /** Region/state code, e.g. FEDERAL, KWARA, GENERAL. */
+    private String regionCode;
     private String instrument;
     private String section;
     private String title;
@@ -29,6 +34,22 @@ public class LawChunk {
 
     public void setJurisdiction(String jurisdiction) {
         this.jurisdiction = jurisdiction;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getRegionCode() {
+        return regionCode;
+    }
+
+    public void setRegionCode(String regionCode) {
+        this.regionCode = regionCode;
     }
 
     public String getInstrument() {

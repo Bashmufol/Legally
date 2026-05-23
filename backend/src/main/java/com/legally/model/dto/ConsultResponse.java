@@ -16,6 +16,10 @@ public class ConsultResponse {
     private boolean demandLetterEligible;
     private String confidence;
     private String disclaimer;
+    private String jurisdictionCountry;
+    private String jurisdictionRegion;
+    private String locationSource;
+    private boolean corpusLimited;
 
     public String getSummary() {
         return summary;
@@ -79,5 +83,37 @@ public class ConsultResponse {
 
     public void setDisclaimer(String disclaimer) {
         this.disclaimer = disclaimer;
+    }
+
+    public String getJurisdictionCountry() {
+        return jurisdictionCountry;
+    }
+
+    public void setJurisdictionCountry(String jurisdictionCountry) {
+        this.jurisdictionCountry = jurisdictionCountry;
+    }
+
+    public String getJurisdictionRegion() {
+        return jurisdictionRegion;
+    }
+
+    public void setJurisdictionRegion(String jurisdictionRegion) {
+        this.jurisdictionRegion = jurisdictionRegion;
+    }
+
+    public String getLocationSource() {
+        return locationSource;
+    }
+
+    public void setLocationSource(String locationSource) {
+        this.locationSource = locationSource;
+    }
+
+    public boolean isCorpusLimited() {
+        return corpusLimited;
+    }
+
+    public void setCorpusLimited(boolean corpusLimited) {
+        this.corpusLimited = corpusLimited;
     }
 }

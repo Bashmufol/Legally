@@ -1,6 +1,7 @@
 package com.legally.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.ConsultResponse;
@@ -8,15 +9,14 @@ import com.legally.model.dto.GeminiLegalResponse;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class ConsultService {
 
-    private static final String DISCLAIMER =
-            "Legally provides general legal information only, not legal advice. Consult a licensed Nigerian lawyer for your specific case.";
-
     private final CorpusService corpusService;
     private final GeminiService geminiService;
+    private final JurisdictionService jurisdictionService;
     private final ContactService contactService;
     private final ConsultationHistoryService consultationHistoryService;
     private final UserService userService;
@@ -25,12 +25,14 @@ public class ConsultService {
     public ConsultService(
             CorpusService corpusService,
             GeminiService geminiService,
+            JurisdictionService jurisdictionService,
             ContactService contactService,
             ConsultationHistoryService consultationHistoryService,
             UserService userService,
             ObjectMapper objectMapper) {
         this.corpusService = corpusService;
         this.geminiService = geminiService;
+        this.jurisdictionService = jurisdictionService;
         this.contactService = contactService;
         this.consultationHistoryService = consultationHistoryService;
         this.userService = userService;
@@ -40,10 +42,17 @@ public class ConsultService {
     public ConsultResponse consult(ConsultRequest request) throws Exception {
         userService.syncCurrentUser();
 
-        List<LawChunk> chunks = corpusService.retrieve(request.getScenario(), request.getMessage(), 8);
+        JurisdictionContext jurisdiction = jurisdictionService.resolve(request);
+        jurisdiction = applyGeminiJurisdictionOverride(request, jurisdiction);
+
+        String disclaimer = jurisdictionService.disclaimerFor(jurisdiction);
+
+        List<LawChunk> chunks = corpusService.retrieve(
+                jurisdiction, request.getScenario(), request.getMessage(), 8);
         GeminiLegalResponse ai = geminiService.analyze(
                 request.getMessage(),
                 request.getScenario(),
+                jurisdiction,
                 chunks,
                 request.getMedia());
 
@@ -54,7 +63,11 @@ public class ConsultService {
         response.setDemandLetterEligible(ai.isDemandLetterEligible());
         response.setConfidence(ai.getConfidence());
         response.setDisclaimer(ai.getDisclaimer() != null && !ai.getDisclaimer().isBlank()
-                ? ai.getDisclaimer() : DISCLAIMER);
+                ? ai.getDisclaimer() : disclaimer);
+        response.setJurisdictionCountry(jurisdiction.getCountryName());
+        response.setJurisdictionRegion(jurisdiction.getRegionName());
+        response.setLocationSource(jurisdiction.getLocationSource().name());
+        response.setCorpusLimited(jurisdiction.isCorpusLimited());
         response.setSources(chunks);
         response.setContacts(contactService.byTags(ai.getSuggestedContactTags()));
 
@@ -64,5 +77,22 @@ public class ConsultService {
 
         consultationHistoryService.save(request, response, objectMapper.writeValueAsString(response));
         return response;
+    }
+
+    /**
+     * When regex text scan did not override, use Gemini on message + uploads for any country/state.
+     */
+    private JurisdictionContext applyGeminiJurisdictionOverride(
+            ConsultRequest request, JurisdictionContext jurisdiction) throws Exception {
+        if (jurisdiction.getLocationSource() == com.legally.model.JurisdictionContext.LocationSource.input_override) {
+            return jurisdiction;
+        }
+        Optional<JurisdictionContext> detected = geminiService.detectJurisdictionFromInputs(
+                request.getMessage(),
+                request.getMedia() != null ? request.getMedia() : List.of(),
+                jurisdiction);
+        return detected
+                .map(jurisdictionService::applyDetectedOverride)
+                .orElse(jurisdiction);
     }
 }

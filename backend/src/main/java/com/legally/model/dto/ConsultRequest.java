@@ -13,6 +13,17 @@ public class ConsultRequest {
     private String scenario;
     private List<MediaRef> media = new ArrayList<>();
 
+    /** ISO 3166-1 alpha-2 (e.g. NG, US) or INT for international fallback. */
+    private String countryCode;
+    private String countryName;
+    /** State/province code or name (e.g. KWARA, CA). */
+    private String regionCode;
+    private String regionName;
+    /** device | input_override | manual */
+    private String locationSource;
+    /** True when user manually set country/region in the UI. */
+    private Boolean jurisdictionOverride;
+
     public String getMessage() {
         return message;
     }
@@ -35,6 +46,54 @@ public class ConsultRequest {
 
     public void setMedia(List<MediaRef> media) {
         this.media = media;
+    }
+
+    public String getCountryCode() {
+        return countryCode;
+    }
+
+    public void setCountryCode(String countryCode) {
+        this.countryCode = countryCode;
+    }
+
+    public String getCountryName() {
+        return countryName;
+    }
+
+    public void setCountryName(String countryName) {
+        this.countryName = countryName;
+    }
+
+    public String getRegionCode() {
+        return regionCode;
+    }
+
+    public void setRegionCode(String regionCode) {
+        this.regionCode = regionCode;
+    }
+
+    public String getRegionName() {
+        return regionName;
+    }
+
+    public void setRegionName(String regionName) {
+        this.regionName = regionName;
+    }
+
+    public String getLocationSource() {
+        return locationSource;
+    }
+
+    public void setLocationSource(String locationSource) {
+        this.locationSource = locationSource;
+    }
+
+    public Boolean getJurisdictionOverride() {
+        return jurisdictionOverride;
+    }
+
+    public void setJurisdictionOverride(Boolean jurisdictionOverride) {
+        this.jurisdictionOverride = jurisdictionOverride;
     }
 
     public static class MediaRef {

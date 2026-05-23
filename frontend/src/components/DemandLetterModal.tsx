@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { Download, X } from 'lucide-react'
 import { generateDemandLetter } from '../api/client'
+import type { JurisdictionFields } from '../types'
 
 interface Props {
   facts: string
   open: boolean
   onClose: () => void
+  jurisdiction?: JurisdictionFields
 }
 
-export default function DemandLetterModal({ facts, open, onClose }: Props) {
+export default function DemandLetterModal({ facts, open, onClose, jurisdiction }: Props) {
   const [letter, setLetter] = useState('')
   const [loading, setLoading] = useState(false)
   const [senderName, setSenderName] = useState('')
@@ -19,7 +21,13 @@ export default function DemandLetterModal({ facts, open, onClose }: Props) {
   const handleGenerate = async () => {
     setLoading(true)
     try {
-      const res = await generateDemandLetter(facts, 'tenancy', senderName, recipientName)
+      const res = await generateDemandLetter(
+        facts,
+        'tenancy',
+        senderName,
+        recipientName,
+        jurisdiction,
+      )
       setLetter(res.letter)
     } catch (e) {
       setLetter(e instanceof Error ? e.message : 'Failed to generate letter')

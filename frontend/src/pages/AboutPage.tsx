@@ -37,8 +37,12 @@ export default function AboutPage() {
         <h2 className="font-display text-xl text-legally-navy">Legal corpus</h2>
         <p>
           Answers are grounded in a curated legal corpus (constitutions, federal acts, and state or
-          regional guidance). The MVP includes Nigerian federal and state sources; additional
-          countries and jurisdictions can be added over time. Citations reference the corpus — not
+          regional guidance). The app automatically detects your country and state from your device
+          location and applies laws for that jurisdiction. If you mention a different country or state
+          in your message, voice recording, or uploaded documents (any country), that location
+          overrides device detection. The MVP includes Nigerian federal and
+          state sources plus international principles; additional country corpora can be added.
+          Citations reference the corpus — not
           invented law.
         </p>
 

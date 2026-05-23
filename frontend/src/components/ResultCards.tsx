@@ -12,7 +12,20 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
         <p className="text-sm leading-relaxed">{result.summary}</p>
         <p className="mt-2 text-xs text-legally-navy/50">
           Confidence: <span className="capitalize font-medium">{result.confidence}</span>
+          {result.jurisdictionCountry && (
+            <>
+              {' '}
+              · Jurisdiction: {result.jurisdictionCountry}
+              {result.jurisdictionRegion ? `, ${result.jurisdictionRegion}` : ''}
+              {result.locationSource === 'input_override' ? ' (from your input)' : result.locationSource === 'device' ? ' (from device location)' : ''}
+            </>
+          )}
         </p>
+        {result.corpusLimited && (
+          <p className="mt-1 text-xs text-amber-800">
+            Limited local law corpus for this jurisdiction — verify with a licensed lawyer.
+          </p>
+        )}
       </Card>
 
       <Card icon={<BookOpen className="w-5 h-5 text-legally-gold" />} title="What the law says">

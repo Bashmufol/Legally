@@ -3,6 +3,7 @@ package com.legally.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.config.LegallyProperties;
+import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.GeminiLegalResponse;
@@ -20,9 +21,6 @@ import java.util.*;
 public class GeminiService {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
-
-    private static final String DISCLAIMER =
-            "Legally provides general legal information only, not legal advice. Consult a licensed Nigerian lawyer for your specific case.";
 
     private final LegallyProperties properties;
     private final RestClient restClient;
@@ -43,15 +41,16 @@ public class GeminiService {
     public GeminiLegalResponse analyze(
             String userMessage,
             String scenario,
+            JurisdictionContext jurisdiction,
             List<LawChunk> chunks,
             List<ConsultRequest.MediaRef> media) throws Exception {
 
         String apiKey = properties.getGemini().getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            return fallbackResponse(userMessage, chunks);
+            return fallbackResponse(userMessage, jurisdiction, chunks);
         }
 
-        String prompt = buildUserPrompt(userMessage, scenario, chunks);
+        String prompt = buildUserPrompt(userMessage, scenario, jurisdiction, chunks);
         List<Map<String, Object>> parts = new ArrayList<>();
         parts.add(Map.of("text", prompt));
 
@@ -62,7 +61,7 @@ public class GeminiService {
         }
 
         Map<String, Object> body = Map.of(
-                "systemInstruction", Map.of("parts", List.of(Map.of("text", systemInstruction()))),
+                "systemInstruction", Map.of("parts", List.of(Map.of("text", systemInstruction(jurisdiction)))),
                 "contents", List.of(Map.of("role", "user", "parts", parts)),
                 "generationConfig", Map.of(
                         "temperature", 0.2,
@@ -72,34 +71,120 @@ public class GeminiService {
 
         try {
             String responseBody = callGemini(apiKey, body);
-            return parseResponse(responseBody, chunks);
+            return parseResponse(responseBody, jurisdiction, chunks);
         } catch (ResourceAccessException e) {
             log.warn("Gemini API unreachable (network/DNS): {}", e.getMessage());
-            return networkFallbackResponse(userMessage, chunks);
+            return networkFallbackResponse(userMessage, jurisdiction, chunks);
         } catch (RestClientResponseException e) {
             log.warn("Gemini API error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
             if (e.getStatusCode().value() == 404) {
-                return networkFallbackResponse(userMessage, chunks,
+                return networkFallbackResponse(userMessage, jurisdiction, chunks,
                         "Gemini model not found. Set GEMINI_MODEL=gemini-2.0-flash in backend/.env and restart.");
             }
             throw e;
         }
     }
 
-    public String generateDemandLetter(String facts, String scenario, List<LawChunk> chunks) throws Exception {
+    /**
+     * Detects explicit country/state in user text and/or attached media (any country worldwide).
+     * Returns empty when inputs do not name a jurisdiction.
+     */
+    public Optional<JurisdictionContext> detectJurisdictionFromInputs(
+            String userMessage,
+            List<ConsultRequest.MediaRef> media,
+            JurisdictionContext deviceBaseline) throws Exception {
+        String apiKey = properties.getGemini().getApiKey();
+        if (apiKey == null || apiKey.isBlank()) {
+            return Optional.empty();
+        }
+
+        boolean hasMessage = userMessage != null && !userMessage.isBlank();
+        boolean hasMedia = media != null && !media.isEmpty();
+        if (!hasMessage && !hasMedia) {
+            return Optional.empty();
+        }
+
+        String prompt = """
+                Determine if the user explicitly wants legal information under a specific country or state/province.
+                Device location (default only when nothing explicit in inputs): %s, %s (code %s / %s).
+
+                Inspect the user message AND any attached files (images, PDFs, audio, video).
+                Examples: "under French law", "According to Nigerian law", "in California", "German inheritance rules",
+                a lease or document naming a jurisdiction, spoken mention of a country in audio/video.
+
+                If a specific country (and optional state/province) is clearly requested, return ONLY JSON:
+                {"explicit":true,"countryCode":"ISO3166-1-alpha-2","countryName":"Full name","regionCode":"REGION_CODE","regionName":"Region name or General"}
+
+                If the question is generic with no country/state specified, return ONLY: {"explicit":false}
+
+                User message:
+                %s
+                """.formatted(
+                deviceBaseline.getCountryName(),
+                deviceBaseline.getRegionName(),
+                deviceBaseline.getCountryCode(),
+                deviceBaseline.getRegionCode(),
+                hasMessage ? userMessage : "(no text — rely on attached files only)");
+
+        List<Map<String, Object>> parts = new ArrayList<>();
+        parts.add(Map.of("text", prompt));
+        if (hasMedia) {
+            for (ConsultRequest.MediaRef ref : media) {
+                attachMedia(parts, ref);
+            }
+        }
+
+        Map<String, Object> body = Map.of(
+                "contents", List.of(Map.of("role", "user", "parts", parts)),
+                "generationConfig", Map.of(
+                        "temperature", 0.0,
+                        "responseMimeType", "application/json"
+                )
+        );
+
+        try {
+            String responseBody = callGemini(apiKey, body);
+            JsonNode root = objectMapper.readTree(responseBody);
+            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText("");
+            text = text.replace("```json", "").replace("```", "").trim();
+            JsonNode parsed = objectMapper.readTree(text);
+            if (!parsed.path("explicit").asBoolean(false)) {
+                return Optional.empty();
+            }
+            JurisdictionContext ctx = new JurisdictionContext();
+            ctx.setCountryCode(parsed.path("countryCode").asText("INT").toUpperCase(Locale.ROOT));
+            ctx.setCountryName(parsed.path("countryName").asText(ctx.getCountryCode()));
+            String regionCode = parsed.path("regionCode").asText("GENERAL");
+            String regionName = parsed.path("regionName").asText("General");
+            ctx.setRegionCode(regionCode.toUpperCase(Locale.ROOT));
+            ctx.setRegionName(regionName);
+            return Optional.of(ctx);
+        } catch (Exception e) {
+            log.warn("Gemini jurisdiction detection failed: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public String generateDemandLetter(
+            String facts, String scenario, JurisdictionContext jurisdiction, List<LawChunk> chunks) throws Exception {
         String apiKey = properties.getGemini().getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
             return defaultDemandLetter(facts);
         }
 
         String prompt = """
-                Draft a formal pre-action demand letter for a Nigerian %s dispute.
-                Use plain formal English. Include: date placeholder, parties, facts, legal basis from corpus only, demanded remedy, 14-day deadline, and signature block.
+                Draft a formal pre-action demand letter for a %s (%s) %s dispute.
+                Use plain formal English appropriate for that jurisdiction. Include: date placeholder, parties, facts, legal basis from corpus only, demanded remedy, reasonable deadline, and signature block.
                 Facts: %s
 
                 Corpus excerpts:
                 %s
-                """.formatted(scenario, facts, formatChunks(chunks));
+                """.formatted(
+                jurisdiction.getCountryName(),
+                jurisdiction.getRegionName(),
+                scenario,
+                facts,
+                formatChunks(chunks));
 
         Map<String, Object> body = Map.of(
                 "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
@@ -144,16 +229,22 @@ public class GeminiService {
         }
     }
 
-    private GeminiLegalResponse parseResponse(String responseBody, List<LawChunk> chunks) throws Exception {
+    private GeminiLegalResponse parseResponse(
+            String responseBody, JurisdictionContext jurisdiction, List<LawChunk> chunks) throws Exception {
         JsonNode root = objectMapper.readTree(responseBody);
         String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText("");
         text = text.replace("```json", "").replace("```", "").trim();
         GeminiLegalResponse parsed = objectMapper.readValue(text, GeminiLegalResponse.class);
         if (parsed.getDisclaimer() == null || parsed.getDisclaimer().isBlank()) {
-            parsed.setDisclaimer(DISCLAIMER);
+            parsed.setDisclaimer(defaultDisclaimer(jurisdiction));
         }
         validateCitations(parsed, chunks);
         return parsed;
+    }
+
+    private String defaultDisclaimer(JurisdictionContext jurisdiction) {
+        return "Legally provides general legal information only, not legal advice. "
+                + "Consult a licensed lawyer in " + jurisdiction.getCountryName() + " for your specific case.";
     }
 
     private void validateCitations(GeminiLegalResponse parsed, List<LawChunk> chunks) {
@@ -179,24 +270,27 @@ public class GeminiService {
         parsed.setLegalAnalysis(filtered);
     }
 
-    private GeminiLegalResponse networkFallbackResponse(String userMessage, List<LawChunk> chunks) {
-        return networkFallbackResponse(userMessage, chunks,
+    private GeminiLegalResponse networkFallbackResponse(
+            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
+        return networkFallbackResponse(userMessage, jurisdiction, chunks,
                 "Could not reach Google Gemini (network or DNS). Showing corpus-based guidance. "
                         + "Check your internet connection, DNS, firewall/VPN, then retry.");
     }
 
     private GeminiLegalResponse networkFallbackResponse(
-            String userMessage, List<LawChunk> chunks, String summaryPrefix) {
-        GeminiLegalResponse r = fallbackResponse(userMessage, chunks);
+            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks, String summaryPrefix) {
+        GeminiLegalResponse r = fallbackResponse(userMessage, jurisdiction, chunks);
         r.setSummary(summaryPrefix + " " + r.getSummary());
         r.setConfidence("low");
         return r;
     }
 
-    private GeminiLegalResponse fallbackResponse(String userMessage, List<LawChunk> chunks) {
+    private GeminiLegalResponse fallbackResponse(
+            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
         GeminiLegalResponse r = new GeminiLegalResponse();
-        r.setSummary("Below is information from the Legally legal corpus relevant to your query.");
-        r.setDisclaimer(DISCLAIMER);
+        r.setSummary("Below is information from the Legally legal corpus relevant to your query in "
+                + jurisdiction.displayLabel() + ".");
+        r.setDisclaimer(defaultDisclaimer(jurisdiction));
         r.setConfidence("medium");
         r.setSuggestedContactTags(List.of("legal_aid"));
 
@@ -233,30 +327,45 @@ public class GeminiService {
         return r;
     }
 
-    private String systemInstruction() {
+    private String systemInstruction(JurisdictionContext jurisdiction) {
+        String corpusNote = jurisdiction.isCorpusLimited()
+                ? " The retrieved corpus may be limited for this country; apply general principles from chunks and clearly note when local statutes are not in the corpus."
+                : "";
         return """
-                You are Legally, a Nigerian legal INFORMATION assistant (not a lawyer).
+                You are Legally, a global legal INFORMATION assistant (not a lawyer).
+                Active jurisdiction: %s (country code %s, region %s).
                 Rules:
-                1. Only cite laws from the provided retrievedChunks JSON. Each legal point MUST include chunkId matching a chunk id.
-                2. Use plain English accessible to non-lawyers.
-                3. Never invent phone numbers or contacts — only return suggestedContactTags from: police, tenant, tenancy, land, legal_aid, kwara_government, fundamental_rights.
-                4. Set demandLetterEligible true only for tenancy/contract disputes.
-                5. Output ONLY valid JSON matching this schema:
+                1. Analyze under the active jurisdiction above (already resolved from device location or explicit mentions in text/media).
+                2. Only cite laws from the provided retrievedChunks JSON. Each legal point MUST include chunkId matching a chunk id.
+                3. Use plain English accessible to non-lawyers.
+                4. Never invent phone numbers or contacts — only return suggestedContactTags from: police, tenant, tenancy, land, legal_aid, kwara_government, fundamental_rights.
+                5. Set demandLetterEligible true only for tenancy/contract disputes where a demand letter is appropriate.
+                6. Output ONLY valid JSON matching this schema:
                 {
                   "summary": "string",
-                  "legalAnalysis": [{"point":"string","chunkId":"string","citation":{"instrument":"string","section":"string","jurisdiction":"FEDERAL|KWARA"}}],
+                  "legalAnalysis": [{"point":"string","chunkId":"string","citation":{"instrument":"string","section":"string","jurisdiction":"string"}}],
                   "steps": ["string"],
                   "suggestedContactTags": ["string"],
                   "demandLetterEligible": false,
                   "confidence": "high|medium|low",
                   "disclaimer": "string"
                 }
-                """;
+                %s
+                """.formatted(
+                jurisdiction.displayLabel(),
+                jurisdiction.getCountryCode(),
+                jurisdiction.getRegionName(),
+                corpusNote);
     }
 
-    private String buildUserPrompt(String userMessage, String scenario, List<LawChunk> chunks) {
+    private String buildUserPrompt(
+            String userMessage, String scenario, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
         return "Scenario: " + (scenario != null ? scenario : "general")
+                + "\nResolved jurisdiction (may be overridden by explicit mentions in message/media): "
+                + jurisdiction.getCountryName() + " / " + jurisdiction.getRegionName()
+                + " (source: " + jurisdiction.getLocationSource() + ")"
                 + "\nUser message: " + userMessage
+                + "\n\nIf attached images, video, or audio mention a location, extract country and region and apply that jurisdiction."
                 + "\n\nretrievedChunks:\n" + formatChunks(chunks);
     }
 
@@ -264,6 +373,7 @@ public class GeminiService {
         StringBuilder sb = new StringBuilder();
         for (LawChunk c : chunks) {
             sb.append("- id: ").append(c.getId())
+                    .append(" | ").append(c.getCountryCode()).append("/").append(c.getRegionCode())
                     .append(" | ").append(c.getJurisdiction())
                     .append(" | ").append(c.getInstrument())
                     .append(" ").append(c.getSection())
@@ -290,7 +400,7 @@ public class GeminiService {
                 I write regarding the following facts:
                 %s
 
-                Your conduct constitutes a breach of our agreement and applicable Nigerian law. I demand that you [specify remedy: revert unlawful rent increase / cease eviction threats / remedy breach] within FOURTEEN (14) days of receipt of this letter.
+                Your conduct constitutes a breach of our agreement and applicable law. I demand that you [specify remedy: revert unlawful rent increase / cease eviction threats / remedy breach] within FOURTEEN (14) days of receipt of this letter.
 
                 If you fail to comply, I will pursue all available civil remedies without further notice, including court action and complaints to relevant authorities.
 
@@ -301,6 +411,6 @@ public class GeminiService {
 
                 ---
                 %s
-                """.formatted(facts, DISCLAIMER);
+                """.formatted(facts, defaultDisclaimer(new JurisdictionContext()));
     }
 }
