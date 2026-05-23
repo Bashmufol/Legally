@@ -7,9 +7,9 @@ export default function AboutPage() {
 
       <div className="prose prose-legally space-y-6 text-legally-navy/80 text-sm leading-relaxed">
         <p>
-          <strong>Legally</strong> was built for the GDG on Campus University of Ilorin CareerFest 2026
-          Innovation Challenge. It addresses <strong>SDG 16</strong> by improving access to justice for
-          Nigerians who cannot afford private lawyers — including tenants, motorists, and land buyers.
+          <strong>Legally</strong> improves access to justice for people who cannot afford private
+          lawyers — anywhere in the world. The platform is designed to scale across countries with
+          national, federal, and state-level law where data is available.
         </p>
 
         <h2 className="font-display text-xl text-legally-navy">Google tools</h2>
@@ -36,9 +36,10 @@ export default function AboutPage() {
 
         <h2 className="font-display text-xl text-legally-navy">Legal corpus</h2>
         <p>
-          Answers are grounded in a curated corpus of the 1999 Constitution (as amended), selected
-          federal statutes (Police Act, ACJA, Land Use Act, Evidence Act, etc.), and Kwara State
-          administrative guidance. Citations reference this corpus — not invented law.
+          Answers are grounded in a curated legal corpus (constitutions, federal acts, and state or
+          regional guidance). The MVP includes Nigerian federal and state sources; additional
+          countries and jurisdictions can be added over time. Citations reference the corpus — not
+          invented law.
         </p>
 
         <h2 className="font-display text-xl text-legally-navy">Limitations</h2>

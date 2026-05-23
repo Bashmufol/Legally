@@ -14,10 +14,16 @@ import java.util.stream.Collectors;
 @Service
 public class CorpusService {
 
-    private static final Map<String, List<String>> SCENARIO_TAGS = Map.of(
-            "police_stop", List.of("police_stop", "search", "phone", "arrest", "fundamental_rights"),
-            "tenancy", List.of("tenancy", "eviction", "rent", "contract", "demand_letter"),
-            "land", List.of("land", "property", "registration", "fraud", "kwara_government")
+    private static final Map<String, List<String>> SCENARIO_TAGS = Map.ofEntries(
+            Map.entry("police_stop", List.of("police_stop", "search", "phone", "arrest", "fundamental_rights")),
+            Map.entry("tenancy", List.of("tenancy", "eviction", "rent", "contract", "demand_letter")),
+            Map.entry("land", List.of("land", "property", "registration", "fraud", "kwara_government")),
+            Map.entry("employment", List.of("fundamental_rights", "contract", "legal_aid")),
+            Map.entry("consumer", List.of("contract", "fraud", "fundamental_rights", "legal_aid")),
+            Map.entry("family", List.of("fundamental_rights", "legal_aid", "tenancy")),
+            Map.entry("debt", List.of("contract", "fundamental_rights", "legal_aid")),
+            Map.entry("business_contract", List.of("contract", "demand_letter", "fraud", "legal_aid")),
+            Map.entry("inheritance", List.of("land", "property", "fundamental_rights", "legal_aid"))
     );
 
     private List<LawChunk> chunks = List.of();
@@ -49,6 +55,24 @@ public class CorpusService {
         }
         if (lower.contains("land") || lower.contains("deed") || lower.contains("survey") || lower.contains("purchase")) {
             activeTags.addAll(List.of("land", "fraud", "registration"));
+        }
+        if (lower.contains("employ") || lower.contains("salary") || lower.contains("fired") || lower.contains("workplace")) {
+            activeTags.addAll(List.of("contract", "fundamental_rights", "legal_aid"));
+        }
+        if (lower.contains("consumer") || lower.contains("refund") || lower.contains("warranty") || lower.contains("scam")) {
+            activeTags.addAll(List.of("contract", "fraud", "legal_aid"));
+        }
+        if (lower.contains("marriage") || lower.contains("divorce") || lower.contains("custody") || lower.contains("domestic")) {
+            activeTags.addAll(List.of("fundamental_rights", "legal_aid"));
+        }
+        if (lower.contains("debt") || lower.contains("loan") || lower.contains("lender")) {
+            activeTags.addAll(List.of("contract", "legal_aid"));
+        }
+        if (lower.contains("inherit") || lower.contains("will") || lower.contains("estate")) {
+            activeTags.addAll(List.of("land", "property", "legal_aid"));
+        }
+        if (lower.contains("contract") || lower.contains("breach") || lower.contains("vendor")) {
+            activeTags.addAll(List.of("contract", "demand_letter"));
         }
 
         List<ScoredChunk> scored = new ArrayList<>();

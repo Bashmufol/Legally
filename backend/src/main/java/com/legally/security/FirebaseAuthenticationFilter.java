@@ -9,6 +9,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -23,6 +24,11 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     public FirebaseAuthenticationFilter(LegallyProperties properties) {
         this.properties = properties;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return HttpMethod.OPTIONS.matches(request.getMethod());
     }
 
     @Override

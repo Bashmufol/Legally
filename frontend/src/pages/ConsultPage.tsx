@@ -8,14 +8,8 @@ import UploadZone from '../components/UploadZone'
 import VoiceRecorder from '../components/VoiceRecorder'
 import ResultCards from '../components/ResultCards'
 import DemandLetterModal from '../components/DemandLetterModal'
+import { SCENARIO_LABELS } from '../data/scenarios'
 import type { ConsultResponse, MediaRef, Scenario } from '../types'
-
-const SCENARIOS: { id: Scenario; label: string }[] = [
-  { id: 'police_stop', label: 'Police stop' },
-  { id: 'tenancy', label: 'Rent / tenancy' },
-  { id: 'land', label: 'Land' },
-  { id: 'general', label: 'General' },
-]
 
 export default function ConsultPage() {
   const [params] = useSearchParams()
@@ -75,7 +69,7 @@ export default function ConsultPage() {
       </p>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        {SCENARIOS.map((s) => (
+        {SCENARIO_LABELS.map((s) => (
           <button
             key={s.id}
             type="button"

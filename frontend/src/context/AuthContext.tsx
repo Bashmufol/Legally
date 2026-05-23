@@ -50,6 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(u)
       setLoading(false)
     })
+    signInAnonymousUser().catch(() => {
+      /* onAuthStateChanged will reflect failure */
+    })
     return () => unsub()
   }, [configured])
 

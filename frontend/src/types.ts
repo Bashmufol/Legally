@@ -1,4 +1,14 @@
-export type Scenario = 'police_stop' | 'tenancy' | 'land' | 'general'
+export type Scenario =
+  | 'police_stop'
+  | 'tenancy'
+  | 'land'
+  | 'employment'
+  | 'consumer'
+  | 'family'
+  | 'debt'
+  | 'business_contract'
+  | 'inheritance'
+  | 'general'
 
 export interface MediaRef {
   url: string

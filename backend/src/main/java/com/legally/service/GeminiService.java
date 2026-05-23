@@ -6,14 +6,20 @@ import com.legally.config.LegallyProperties;
 import com.legally.model.LawChunk;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.GeminiLegalResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.*;
 
 @Service
 public class GeminiService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
 
     private static final String DISCLAIMER =
             "Legally provides general legal information only, not legal advice. Consult a licensed Nigerian lawyer for your specific case.";
@@ -64,18 +70,20 @@ public class GeminiService {
                 )
         );
 
-        String model = properties.getGemini().getModel();
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/"
-                + model + ":generateContent?key=" + apiKey;
-
-        String responseBody = restClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(String.class);
-
-        return parseResponse(responseBody, chunks);
+        try {
+            String responseBody = callGemini(apiKey, body);
+            return parseResponse(responseBody, chunks);
+        } catch (ResourceAccessException e) {
+            log.warn("Gemini API unreachable (network/DNS): {}", e.getMessage());
+            return networkFallbackResponse(userMessage, chunks);
+        } catch (RestClientResponseException e) {
+            log.warn("Gemini API error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
+            if (e.getStatusCode().value() == 404) {
+                return networkFallbackResponse(userMessage, chunks,
+                        "Gemini model not found. Set GEMINI_MODEL=gemini-2.0-flash in backend/.env and restart.");
+            }
+            throw e;
+        }
     }
 
     public String generateDemandLetter(String facts, String scenario, List<LawChunk> chunks) throws Exception {
@@ -98,19 +106,31 @@ public class GeminiService {
                 "generationConfig", Map.of("temperature", 0.3)
         );
 
+        try {
+            String responseBody = callGemini(apiKey, body);
+            JsonNode root = objectMapper.readTree(responseBody);
+            return root.path("candidates").path(0).path("content").path("parts").path(0).path("text")
+                    .asText(defaultDemandLetter(facts));
+        } catch (ResourceAccessException e) {
+            log.warn("Gemini unreachable for demand letter: {}", e.getMessage());
+            return defaultDemandLetter(facts);
+        }
+    }
+
+    private String callGemini(String apiKey, Map<String, Object> body) {
         String model = properties.getGemini().getModel();
+        if (model == null || model.isBlank()) {
+            model = "gemini-2.0-flash";
+        }
         String url = "https://generativelanguage.googleapis.com/v1beta/models/"
                 + model + ":generateContent?key=" + apiKey;
 
-        String responseBody = restClient.post()
+        return restClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .body(String.class);
-
-        JsonNode root = objectMapper.readTree(responseBody);
-        return root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText(defaultDemandLetter(facts));
     }
 
     private void attachMedia(List<Map<String, Object>> parts, ConsultRequest.MediaRef ref) {
@@ -159,9 +179,23 @@ public class GeminiService {
         parsed.setLegalAnalysis(filtered);
     }
 
+    private GeminiLegalResponse networkFallbackResponse(String userMessage, List<LawChunk> chunks) {
+        return networkFallbackResponse(userMessage, chunks,
+                "Could not reach Google Gemini (network or DNS). Showing corpus-based guidance. "
+                        + "Check your internet connection, DNS, firewall/VPN, then retry.");
+    }
+
+    private GeminiLegalResponse networkFallbackResponse(
+            String userMessage, List<LawChunk> chunks, String summaryPrefix) {
+        GeminiLegalResponse r = fallbackResponse(userMessage, chunks);
+        r.setSummary(summaryPrefix + " " + r.getSummary());
+        r.setConfidence("low");
+        return r;
+    }
+
     private GeminiLegalResponse fallbackResponse(String userMessage, List<LawChunk> chunks) {
         GeminiLegalResponse r = new GeminiLegalResponse();
-        r.setSummary("Gemini API key is not configured. Below is information from the Legally legal corpus relevant to your query.");
+        r.setSummary("Below is information from the Legally legal corpus relevant to your query.");
         r.setDisclaimer(DISCLAIMER);
         r.setConfidence("medium");
         r.setSuggestedContactTags(List.of("legal_aid"));
