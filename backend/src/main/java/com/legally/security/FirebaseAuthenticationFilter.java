@@ -28,7 +28,18 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return HttpMethod.OPTIONS.matches(request.getMethod());
+        if (HttpMethod.OPTIONS.matches(request.getMethod())) {
+            return true;
+        }
+        String path = request.getRequestURI();
+        // Match SecurityConfig permitAll — filter runs before authorization
+        if (path.startsWith("/actuator/")) {
+            return true;
+        }
+        if (path.startsWith("/api/uploads/files/")) {
+            return true;
+        }
+        return false;
     }
 
     @Override
