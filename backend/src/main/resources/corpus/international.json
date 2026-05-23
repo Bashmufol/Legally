@@ -1,0 +1,57 @@
+[
+  {
+    "id": "intl-fair-hearing",
+    "countryCode": "INT",
+    "regionCode": "GENERAL",
+    "jurisdiction": "INTERNATIONAL",
+    "instrument": "Universal principles of fair process",
+    "section": "General",
+    "title": "Right to fair hearing in civil matters",
+    "text": "Many legal systems require that civil rights and obligations be determined through a fair, impartial process within a reasonable time. Parties should receive notice of claims against them and an opportunity to be heard before adverse decisions.",
+    "tags": ["fundamental_rights", "tenancy", "land", "employment", "contract"]
+  },
+  {
+    "id": "intl-contract-breach",
+    "countryCode": "INT",
+    "regionCode": "GENERAL",
+    "jurisdiction": "INTERNATIONAL",
+    "instrument": "Contract law — general principles",
+    "section": "Breach and remedies",
+    "title": "Breach of contract",
+    "text": "Where parties have a binding agreement, failure to perform material obligations may constitute breach. Common remedies include damages, specific performance where available, and formal written demand before litigation. Always preserve written evidence of the agreement and communications.",
+    "tags": ["contract", "tenancy", "business_contract", "debt", "demand_letter"]
+  },
+  {
+    "id": "intl-tenancy-general",
+    "countryCode": "INT",
+    "regionCode": "GENERAL",
+    "jurisdiction": "INTERNATIONAL",
+    "instrument": "Landlord–tenant — general guidance",
+    "section": "General",
+    "title": "Tenancy disputes",
+    "text": "Tenancy rules vary by country and region. Tenants should keep rent receipts, lease copies, and notice records. Unlawful eviction or harassment may be challenged through courts or housing authorities depending on local law. Do not surrender possession without understanding local notice requirements.",
+    "tags": ["tenancy", "eviction", "rent", "demand_letter"]
+  },
+  {
+    "id": "intl-police-rights",
+    "countryCode": "INT",
+    "regionCode": "GENERAL",
+    "jurisdiction": "INTERNATIONAL",
+    "instrument": "Police encounters — general guidance",
+    "section": "General",
+    "title": "Police stops and searches",
+    "text": "During police encounters, individuals should remain calm, ask whether they are free to leave, and avoid resisting. Search and seizure powers differ widely by jurisdiction; note officer names, time, and location. Report misconduct through official police oversight or human-rights bodies where available.",
+    "tags": ["police_stop", "search", "phone", "fundamental_rights"]
+  },
+  {
+    "id": "intl-legal-aid",
+    "countryCode": "INT",
+    "regionCode": "GENERAL",
+    "jurisdiction": "INTERNATIONAL",
+    "instrument": "Access to legal assistance",
+    "section": "General",
+    "title": "Legal aid and qualified counsel",
+    "text": "Many countries provide legal aid, public defenders, or bar association referral services for those who cannot afford private counsel. Seek a lawyer licensed in your jurisdiction before signing settlements or pleadings.",
+    "tags": ["legal_aid", "fundamental_rights"]
+  }
+]
