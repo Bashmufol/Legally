@@ -8,18 +8,14 @@ import java.util.List;
 public class LawChunk {
 
     private String id;
-    /** Legacy: FEDERAL | KWARA — kept for Nigerian corpus compatibility. */
     private String jurisdiction;
-    /** ISO country code, e.g. NG, US, INT. */
     private String countryCode;
-    /** Region/state code, e.g. FEDERAL, KWARA, GENERAL. */
     private String regionCode;
     private String instrument;
     private String section;
     private String title;
     private String text;
     private List<String> tags;
-    /** Public URL where this law text is published or referenced. */
     private String sourceUrl;
 
     public String getId() {

@@ -2,7 +2,7 @@ export default function Disclaimer({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
       <p className="text-xs text-center text-legally-navy/70 max-w-2xl mx-auto">
-        Legally provides general legal information only — not legal advice. Always consult a
+        Legally provides general legal information only, not legal advice. Always consult a
         licensed lawyer in your country.
       </p>
     )

@@ -72,11 +72,6 @@ public class LegallyProperties {
         }
     }
 
-    /**
-     * local = Docker Postgres on localhost (default)
-     * cloud-sql = JDBC via Cloud SQL socket factory (Firebase SQL Connect instance on GCP)
-     * direct = use spring.datasource.url as-is (public IP or Cloud SQL Auth Proxy on 127.0.0.1)
-     */
     public static class Database {
         private String mode = "local";
         private String name = "legally";

@@ -47,10 +47,6 @@ public class JurisdictionService {
             new CountryMention(Pattern.compile("\\bsouth africa\\b", Pattern.CASE_INSENSITIVE), "ZA", "South Africa")
     );
 
-    /**
-     * Resolution order: explicit country/state in user text &gt; device location from request &gt; default.
-     * Further overrides (any country) are detected in {@link ConsultService} via Gemini on text and media.
-     */
     public JurisdictionContext resolve(ConsultRequest request) {
         String message = request.getMessage() != null ? request.getMessage() : "";
 

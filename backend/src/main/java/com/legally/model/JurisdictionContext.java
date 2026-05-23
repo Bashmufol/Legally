@@ -87,7 +87,7 @@ public class JurisdictionContext {
 
     public String displayLabel() {
         if (regionCode != null && !regionCode.isBlank() && !"GENERAL".equalsIgnoreCase(regionCode)) {
-            return countryName + " — " + regionName;
+            return countryName + ", " + regionName;
         }
         return countryName;
     }

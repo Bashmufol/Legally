@@ -45,15 +45,19 @@ public class ConsultService {
     public ConsultResponse consult(ConsultRequest request) throws Exception {
         userService.syncCurrentUser();
 
-        JurisdictionContext jurisdiction = jurisdictionService.resolve(request);
-        jurisdiction = applyGeminiJurisdictionOverride(request, jurisdiction);
+        validateConsultInput(request);
+        String messageText = normalizedMessage(request);
+
+        ConsultRequest jurisdictionRequest = copyForJurisdiction(request, messageText);
+        JurisdictionContext jurisdiction = jurisdictionService.resolve(jurisdictionRequest);
+        jurisdiction = applyGeminiJurisdictionOverride(jurisdictionRequest, jurisdiction);
 
         String disclaimer = jurisdictionService.disclaimerFor(jurisdiction);
 
         List<LawChunk> chunks = corpusService.retrieve(
-                jurisdiction, request.getScenario(), request.getMessage(), 8);
+                jurisdiction, request.getScenario(), messageText, 8);
         GeminiLegalResponse ai = geminiService.analyze(
-                request.getMessage(),
+                messageText,
                 request.getScenario(),
                 jurisdiction,
                 chunks,
@@ -84,9 +88,36 @@ public class ConsultService {
         return response;
     }
 
-    /**
-     * When regex text scan did not override, use Gemini on message + uploads for any country/state.
-     */
+    private void validateConsultInput(ConsultRequest request) {
+        boolean hasMessage = request.getMessage() != null && !request.getMessage().isBlank();
+        boolean hasMedia = request.getMedia() != null && !request.getMedia().isEmpty();
+        if (!hasMessage && !hasMedia) {
+            throw new IllegalArgumentException(
+                    "Provide a written description, a voice recording, or an uploaded file (or any combination).");
+        }
+    }
+
+    private String normalizedMessage(ConsultRequest request) {
+        if (request.getMessage() == null) {
+            return "";
+        }
+        return request.getMessage().trim();
+    }
+
+    private ConsultRequest copyForJurisdiction(ConsultRequest request, String messageText) {
+        ConsultRequest copy = new ConsultRequest();
+        copy.setMessage(messageText);
+        copy.setScenario(request.getScenario());
+        copy.setMedia(request.getMedia());
+        copy.setCountryCode(request.getCountryCode());
+        copy.setCountryName(request.getCountryName());
+        copy.setRegionCode(request.getRegionCode());
+        copy.setRegionName(request.getRegionName());
+        copy.setLocationSource(request.getLocationSource());
+        copy.setJurisdictionOverride(request.getJurisdictionOverride());
+        return copy;
+    }
+
     private void enrichCitationSources(List<GeminiLegalResponse.LegalPoint> points, List<LawChunk> chunks) {
         Map<String, LawChunk> byId = new HashMap<>();
         for (LawChunk chunk : chunks) {

@@ -65,7 +65,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="max-w-6xl mx-auto px-4 py-6">
           <Disclaimer compact />
           <p className="text-xs text-legally-navy/50 mt-3 text-center">
-            Legally — accessible legal information worldwide
+            Legally · accessible legal information worldwide
           </p>
         </div>
       </footer>

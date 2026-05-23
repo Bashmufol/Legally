@@ -44,7 +44,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
         </p>
         {result.corpusLimited && (
           <p className="mt-1 text-xs text-amber-800">
-            Limited local law corpus for this jurisdiction — verify with a licensed lawyer.
+            Limited local law corpus for this jurisdiction. Verify with a licensed lawyer.
           </p>
         )}
       </Card>
@@ -64,13 +64,13 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-legally-gold font-medium hover:underline"
                     >
-                      {item.citation.instrument} — {item.citation.section} (
+                      {item.citation.instrument}, {item.citation.section} (
                       {item.citation.jurisdiction})
                       <ExternalLink className="w-3 h-3 shrink-0" aria-hidden />
                     </a>
                   ) : (
                     <>
-                      {item.citation.instrument} — {item.citation.section} (
+                      {item.citation.instrument}, {item.citation.section} (
                       {item.citation.jurisdiction})
                     </>
                   )}
@@ -151,7 +151,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
             <ul className="px-4 pb-4 space-y-2 text-xs text-legally-navy/70 border-t">
               {result.sources.map((s) => (
                 <li key={s.id}>
-                  <strong>{s.title}</strong> —{' '}
+                  <strong>{s.title}</strong>:{' '}
                   {s.sourceUrl ? (
                     <a
                       href={s.sourceUrl}

@@ -1,58 +1,57 @@
-# Legally — AI-Powered Legal Advisor
+# Legally
 
-GDG CareerFest 2026 · **SDG 16** (Peace, Justice, and Strong Institutions)
+Legally is an AI-powered legal information platform that helps people understand their rights, see what the law says, and take practical next steps—without needing a law degree or an expensive lawyer on call.
 
-Legally helps people understand their rights using **Google Gemini API**, **PostgreSQL on Cloud SQL** (provisioned via Firebase SQL Connect — **Option A: direct JDBC**), **Firebase Anonymous Auth**, and **Firebase Storage**. The app supports **global jurisdictions**: country and state/province are detected from device location (with manual fallback), and explicit mentions in the user’s text or media override device location.
+Users can consult via text, voice, images, PDFs, or video. The system detects jurisdiction from device location and honors explicit country or state mentions in the user’s input. Responses are grounded in a curated legal corpus with source links, actionable steps, and verified public contact details. Users can also draft agreements and formal letters tailored to their jurisdiction, preview them, and download PDFs.
 
-## Stack
+## Features
+
+- **Legal consultations** — scenario-based guidance (police interactions, tenancy, land, employment, and more)
+- **Multimodal input** — text, voice recordings, documents, and video evidence
+- **Global jurisdiction** — automatic location detection with input-based override
+- **Grounded citations** — each point tied to corpus sources with external reference links
+- **Curated contacts** — clickable phone numbers and official social or web channels
+- **Document drafting** — rent agreements, land contracts, NDAs, demand letters, and other templates
+
+## Architecture
 
 | Layer | Technology |
 |-------|------------|
-| Backend | **Java 21**, **Spring Boot 4.0.6** |
-| Database | **PostgreSQL** — local Docker or **Cloud SQL** from Firebase SQL Connect ([Option A guide](docs/CLOUD_SQL_OPTION_A.md)) |
-| Auth | **Firebase Anonymous Auth** (no signup/login UI) |
-| Files | **Firebase Storage** (or local `uploads/` in dev) |
-| AI | **Google Gemini API** |
-| Frontend | React, TypeScript, Tailwind, Vite |
+| API | Java 21, Spring Boot 4 |
+| Database | PostgreSQL (local Docker or Cloud SQL) |
+| Authentication | Firebase Anonymous Auth |
+| File storage | Firebase Storage (local filesystem in dev) |
+| AI | Google Gemini API |
+| Web app | React, TypeScript, Tailwind CSS, Vite |
 
-## Quick start
+## Prerequisites
 
-### 1. PostgreSQL
+- Java 21 and Maven
+- Node.js 18+
+- Docker (for local PostgreSQL)
+- A [Firebase](https://console.firebase.google.com/) project with Anonymous Auth and Storage enabled
+- A [Gemini API](https://ai.google.dev/) key
+
+## Local development
+
+### 1. Database
 
 ```bash
 docker compose up -d postgres
 ```
 
-### 2. Firebase project
+### 2. Backend
 
-1. [Firebase Console](https://console.firebase.google.com/) → create project (same GCP project as Cloud SQL if used)
-2. **Authentication** → Sign-in method → enable **Anonymous**
-3. **Storage** → create default bucket
-4. **Project settings** → Service accounts → generate **Admin SDK** JSON → save as `backend/firebase-service-account.json`
-5. **Project settings** → Your apps → Web app → copy config into `frontend/.env`
-
-If you used **Firebase SQL Connect**, set `DATABASE_MODE=cloud-sql` and `CLOUD_SQL_INSTANCE_CONNECTION_NAME` — see [docs/CLOUD_SQL_OPTION_A.md](docs/CLOUD_SQL_OPTION_A.md). Local dev can stay on Docker (`DATABASE_MODE=local`).
-
-### 3. Backend
+Copy `backend/.env.example` to `backend/.env` and set your keys. Then:
 
 ```powershell
 cd backend
-$env:GEMINI_API_KEY="your_key"
-$env:DATABASE_URL="jdbc:postgresql://localhost:5432/legally"
-$env:DATABASE_USERNAME="legally"
-$env:DATABASE_PASSWORD="legally"
-$env:FIREBASE_ENABLED="true"
-$env:FIREBASE_CREDENTIALS_PATH="./firebase-service-account.json"
-$env:FIREBASE_PROJECT_ID="your-project-id"
-$env:FIREBASE_STORAGE_BUCKET="your-project.appspot.com"
-$env:FIREBASE_REQUIRE_AUTH="true"
-
 mvn spring-boot:run
 ```
 
-API: http://localhost:8080
+The API listens on `http://localhost:8080`.
 
-### 4. Frontend
+### 3. Frontend
 
 ```bash
 cd frontend
@@ -61,63 +60,46 @@ npm install
 npm run dev
 ```
 
-App: http://localhost:5173 — signs in anonymously on first visit when Firebase is configured.
+Open `http://localhost:5173`.
 
-## Security model
+Place your Firebase Admin SDK JSON at `backend/firebase-service-account.json` and add the web app config to `frontend/.env` (see the example files).
 
-- Users never see a login form; the app calls `signInAnonymously()` automatically.
-- Each API request sends `Authorization: Bearer <Firebase ID token>`.
-- The backend verifies tokens with the Firebase Admin SDK and **rejects non-anonymous** providers when `FIREBASE_ANONYMOUS_ONLY=true`.
-- Consultation history and uploads are scoped to the Firebase UID in PostgreSQL.
-
-## Local dev without Firebase
+### Development without Firebase
 
 ```powershell
 $env:FIREBASE_ENABLED="false"
 $env:FIREBASE_REQUIRE_AUTH="false"
 ```
 
-Uses guest principal (no persisted history). Uploads go to `backend/uploads/`.
+Uploads are stored under `backend/uploads/`. Consultation history is not persisted for guest mode.
 
-## Cloud SQL (Firebase SQL Connect)
+## Security
 
-See **[docs/CLOUD_SQL_OPTION_A.md](docs/CLOUD_SQL_OPTION_A.md)** for connecting to `legally-7f34d-instance` / `legally-7f34d-database`.
+- The web app signs users in anonymously in the background—no login form.
+- API requests carry a Firebase ID token; the backend verifies it with the Admin SDK.
+- Data is scoped to the authenticated user in PostgreSQL.
 
-## Environment variables
+## Configuration
 
-See [backend/.env.example](backend/.env.example), [backend/.env.cloudsql.example](backend/.env.cloudsql.example), and [frontend/.env.example](frontend/.env.example).
+| Variable | Description |
+|----------|-------------|
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `DATABASE_MODE` | `local`, `cloud-sql`, or `direct` |
+| `FIREBASE_*` | Firebase project and credentials |
+| `CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
+| `VITE_API_URL` | Backend URL for the web app |
 
-## PostgreSQL tables (auto-created via JPA)
+See `backend/.env.example` and `frontend/.env.example` for the full list.
 
-| Table | Purpose |
-|-------|---------|
-| `app_users` | Anonymous Firebase users |
-| `consultations` | Consultation history |
-| `demand_letters` | Generated letters |
-| `media_uploads` | Upload metadata |
+## Legal corpus
 
-Legal corpus and contacts remain in bundled JSON (`backend/src/main/resources/`).
+Statutes and guidance live in `backend/src/main/resources/corpus/` as JSON chunks (`countryCode`, `regionCode`, `tags`, `sourceUrl`). Contacts are in `backend/src/main/resources/contacts/contacts.json`.
 
-### Global jurisdiction
+## Production deployment
 
-| Source | Priority |
-|--------|----------|
-| Country/state mentioned in message or media | Highest (`input_override`) |
-| Device geolocation + reverse geocode (frontend) | Next (`device`) |
-| Manual country/state picker | User override (`manual`) |
-| International generic corpus | Fallback (`default_fallback`) |
-
-- Nigerian federal and Kwara state chunks live in `corpus/corpus.json` (tagged `countryCode: NG` via normalization).
-- Generic international principles: `corpus/international.json`.
-- Add country-specific corpora under `corpus/{country}/` as JSON arrays with `countryCode`, `regionCode`, and `tags`.
-
-## Google tools (hackathon)
-
-- **Gemini API** — legal analysis & demand letters
-- **Firebase Auth** — anonymous sessions
-- **Firebase Storage** — evidence uploads
-- **PostgreSQL** — persistent data in your Firebase/GCP project
+- **Backend:** Build with `backend/Dockerfile` and deploy to Cloud Run, Render, or any Java host.
+- **Frontend:** Build with `npm run build` and deploy to Vercel or static hosting. Set `VITE_API_URL` to your API origin and add the frontend URL to `CORS_ALLOWED_ORIGINS`.
 
 ## Disclaimer
 
-Legally provides general legal information only, not legal advice.
+Legally provides general legal information only. It is not a substitute for advice from a licensed lawyer in your jurisdiction. Always verify critical decisions with qualified counsel.

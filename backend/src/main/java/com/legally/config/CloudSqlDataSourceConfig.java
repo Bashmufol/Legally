@@ -14,10 +14,6 @@ import org.springframework.util.StringUtils;
 
 import javax.sql.DataSource;
 
-/**
- * Option A: Spring Boot connects directly to the PostgreSQL database on the
- * Cloud SQL instance provisioned by Firebase SQL Connect (no SQL Connect GraphQL SDK).
- */
 @Configuration
 @ConditionalOnProperty(name = "legally.database.mode", havingValue = "cloud-sql")
 @EnableConfigurationProperties(DataSourceProperties.class)

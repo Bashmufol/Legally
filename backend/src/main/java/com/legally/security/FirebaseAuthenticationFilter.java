@@ -32,7 +32,6 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
             return true;
         }
         String path = request.getRequestURI();
-        // Match SecurityConfig permitAll — filter runs before authorization
         if (path.startsWith("/actuator/")) {
             return true;
         }

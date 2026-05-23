@@ -6,12 +6,17 @@ import { useAuth } from '../context/AuthContext'
 import type { HistoryItem } from '../types'
 import UploadZone from '../components/UploadZone'
 import VoiceRecorder from '../components/VoiceRecorder'
+import AttachedMediaList from '../components/AttachedMediaList'
 import { useJurisdiction } from '../hooks/useJurisdiction'
 import ResultCards from '../components/ResultCards'
 import DemandLetterModal from '../components/DemandLetterModal'
-import { SCENARIO_LABELS } from '../data/scenarios'
+import { getConsultHelpers, SCENARIO_LABELS } from '../data/scenarios'
 import { toUserMessage } from '../lib/errors'
 import type { ConsultResponse, MediaRef, Scenario } from '../types'
+
+function hasConsultInput(message: string, media: MediaRef[]): boolean {
+  return message.trim().length > 0 || media.length > 0
+}
 
 export default function ConsultPage() {
   const [params] = useSearchParams()
@@ -27,6 +32,7 @@ export default function ConsultPage() {
   const [history, setHistory] = useState<HistoryItem[]>([])
   const { user, configured, loading: authLoading, signInGuest } = useAuth()
   const { jurisdiction } = useJurisdiction()
+  const helpers = getConsultHelpers(scenario)
 
   useEffect(() => {
     if (configured && !user && !authLoading) {
@@ -44,10 +50,11 @@ export default function ConsultPage() {
   }, [user, result])
 
   const addMedia = (m: MediaRef) => setMedia((prev) => [...prev, m])
+  const removeMedia = (index: number) => setMedia((prev) => prev.filter((_, i) => i !== index))
 
   const submit = async () => {
-    if (!message.trim()) {
-      setError('Please describe your situation.')
+    if (!hasConsultInput(message, media)) {
+      setError(helpers.emptyInputHint)
       return
     }
     if (configured && !user) {
@@ -57,7 +64,7 @@ export default function ConsultPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await consult(message, scenario, media, jurisdiction)
+      const res = await consult(message.trim(), scenario, media, jurisdiction)
       setResult(res)
     } catch (e) {
       setError(toUserMessage(e))
@@ -66,14 +73,17 @@ export default function ConsultPage() {
     }
   }
 
+  const canSubmit = hasConsultInput(message, media) && !loading
+
+  const demandLetterFacts =
+    message.trim() || result?.summary || 'See consultation summary and attached evidence.'
+
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <h1 className="font-display text-3xl mb-2">Legal consultation</h1>
-      <p className="text-legally-navy/70 mb-8 text-sm">
-        Describe your issue, upload documents or recordings, and receive grounded legal information.
-      </p>
+      <p className="text-legally-navy/70 mb-8 text-sm max-w-2xl">{helpers.intro}</p>
 
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-2">
         {SCENARIO_LABELS.map((s) => (
           <button
             key={s.id}
@@ -89,6 +99,11 @@ export default function ConsultPage() {
           </button>
         ))}
       </div>
+      <p className="text-xs text-legally-navy/50 mb-6">
+        Selected: <span className="font-medium text-legally-navy">{helpers.shortTitle}</span>
+        {' · '}
+        Use text, voice, or uploads, together or separately.
+      </p>
 
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-4">
@@ -96,19 +111,19 @@ export default function ConsultPage() {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={6}
-            placeholder="e.g. During a police interaction they demanded my phone password…"
+            placeholder={helpers.textPlaceholder}
             className="w-full rounded-xl border border-legally-navy/15 bg-white px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-legally-gold/50"
           />
-          <UploadZone onUploaded={addMedia} disabled={loading} />
+          <UploadZone onUploaded={addMedia} disabled={loading} hint={helpers.uploadHint} />
           <VoiceRecorder onRecorded={addMedia} disabled={loading} />
-          {media.length > 0 && (
-            <p className="text-xs text-legally-navy/60">{media.length} file(s) attached</p>
-          )}
+
+          <AttachedMediaList items={media} onRemove={removeMedia} />
+
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button
             type="button"
             onClick={submit}
-            disabled={loading}
+            disabled={!canSubmit}
             className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-legally-gold text-legally-navy font-semibold py-3 hover:opacity-90 disabled:opacity-50"
           >
             {loading ? (
@@ -123,6 +138,9 @@ export default function ConsultPage() {
               </>
             )}
           </button>
+          {!hasConsultInput(message, media) && (
+            <p className="text-xs text-legally-navy/50 text-center">{helpers.emptyInputHint}</p>
+          )}
         </div>
 
         <div>
@@ -143,7 +161,7 @@ export default function ConsultPage() {
             </>
           ) : (
             <div className="rounded-xl border border-dashed border-legally-navy/20 bg-white/50 p-12 text-center text-legally-navy/50 text-sm">
-              Your analysis will appear here — summary, law, steps, and contacts.
+              {helpers.resultsPlaceholder}
             </div>
           )}
         </div>
@@ -171,7 +189,7 @@ export default function ConsultPage() {
       )}
 
       <DemandLetterModal
-        facts={message}
+        facts={demandLetterFacts}
         open={letterOpen}
         onClose={() => setLetterOpen(false)}
         jurisdiction={{

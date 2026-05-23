@@ -11,7 +11,7 @@ export default function HomePage() {
             Know your rights. <span className="text-legally-gold">Act with confidence.</span>
           </h1>
           <p className="mt-6 text-lg text-white/80 max-w-2xl">
-            Legally is a global AI-powered legal advisor — grounded on national constitutions,
+            Legally is a global AI-powered legal advisor, grounded on national constitutions,
             federal and state laws across countries, and local regulations where available. Text,
             speak, or upload evidence and get plain-English answers with legal sources and official
             contacts.
@@ -43,7 +43,7 @@ export default function HomePage() {
       <section className="max-w-6xl mx-auto px-4 py-16">
         <h2 className="font-display text-2xl mb-2 text-center">Choose your situation</h2>
         <p className="text-center text-sm text-legally-navy/60 mb-8 max-w-xl mx-auto">
-          Common legal disputes — select one to start a tailored consultation
+          Common legal disputes. Select one to start a tailored consultation.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {SITUATIONS.map((s) => (
