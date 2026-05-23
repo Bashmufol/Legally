@@ -6,8 +6,8 @@
     "role": "National Police spokesperson and public complaints channel",
     "phones": ["08033417775"],
     "social": {
-      "x": "@PoliceNG",
-      "facebook": "Nigeria Police Force"
+      "X": "https://x.com/PoliceNG",
+      "Facebook": "https://www.facebook.com/NigeriaPoliceForce"
     },
     "notes": "For reporting police misconduct; also contact your State Command PRO."
   },
@@ -17,7 +17,9 @@
     "name": "Kwara State Police Command",
     "role": "State-level police headquarters (Ilorin)",
     "phones": ["07039194332"],
-    "social": {},
+    "social": {
+      "Website": "https://www.npf.gov.ng/"
+    },
     "notes": "Report roadside harassment or unlawful search; ask for PRO desk."
   },
   {
@@ -27,7 +29,8 @@
     "role": "Federal human rights complaints",
     "phones": ["080064274832", "092903743"],
     "social": {
-      "x": "@NHRCNigeria"
+      "X": "https://x.com/NHRCNigeria",
+      "Website": "https://nhrc.gov.ng/"
     },
     "notes": "File complaints on unlawful arrest, search, or detention."
   },
@@ -38,7 +41,8 @@
     "role": "Free legal assistance for eligible citizens",
     "phones": ["08052865370"],
     "social": {
-      "facebook": "Legal Aid Council of Nigeria"
+      "Facebook": "https://www.facebook.com/legalaidcouncilnigeria",
+      "Website": "https://legalaidcouncil.gov.ng/"
     },
     "notes": "Apply if you cannot afford a private lawyer."
   },
@@ -49,7 +53,8 @@
     "role": "Referral to qualified lawyers in Kwara",
     "phones": [],
     "social": {
-      "facebook": "NBA Ilorin Branch"
+      "Facebook": "https://www.facebook.com/nbailorinbranch",
+      "Website": "https://nigerianbar.org.ng/"
     },
     "notes": "Contact for private legal representation referrals."
   },
@@ -59,7 +64,9 @@
     "name": "Kwara State Ministry of Housing and Urban Development",
     "role": "Land administration, consent, and registry matters",
     "phones": [],
-    "social": {},
+    "social": {
+      "Website": "https://kwara.gov.ng/"
+    },
     "notes": "Conduct land searches and verify State land records in Ilorin."
   },
   {
@@ -69,7 +76,8 @@
     "role": "Federal housing policy and related inquiries",
     "phones": [],
     "social": {
-      "x": "@FMHUDNG"
+      "X": "https://x.com/FMHUDNG",
+      "Website": "https://fmhd.gov.ng/"
     },
     "notes": "For federal housing programmes; land title is primarily State jurisdiction."
   },
@@ -79,7 +87,9 @@
     "name": "Kwara State Ministry of Justice",
     "role": "State legal matters and public guidance",
     "phones": [],
-    "social": {},
+    "social": {
+      "Website": "https://kwara.gov.ng/"
+    },
     "notes": "State-level legal information and civil dispute guidance."
   },
   {
@@ -89,7 +99,8 @@
     "role": "Oversight and discipline of police officers",
     "phones": [],
     "social": {
-      "x": "@PoliceServiceNG"
+      "X": "https://x.com/PoliceServiceNG",
+      "Website": "https://www.psc.gov.ng/"
     },
     "notes": "Formal complaints against police officers beyond initial PRO report."
   },
@@ -99,7 +110,9 @@
     "name": "Citizen Mediation / Small Claims Guidance",
     "role": "Community mediation before court",
     "phones": [],
-    "social": {},
+    "social": {
+      "Legal Aid Council": "https://legalaidcouncil.gov.ng/"
+    },
     "notes": "Document all rent payments; seek Legal Aid or NBA referral before court."
   }
 ]

@@ -1,7 +1,24 @@
 import { useState } from 'react'
-import { BookOpen, ListOrdered, Phone, ScrollText, ChevronDown } from 'lucide-react'
-import type { ConsultResponse } from '../types'
+import { BookOpen, ExternalLink, ListOrdered, Phone, ScrollText, ChevronDown } from 'lucide-react'
+import type { ConsultResponse, LawChunk } from '../types'
+import { phoneTelHref, socialHref } from '../lib/links'
 import Disclaimer from './Disclaimer'
+
+function sourceUrlForPoint(
+  item: ConsultResponse['legalAnalysis'][0],
+  sources: LawChunk[],
+): string | undefined {
+  if (item.citation?.sourceUrl) return item.citation.sourceUrl
+  if (item.chunkId) {
+    const chunk = sources.find((s) => s.id === item.chunkId)
+    if (chunk?.sourceUrl) return chunk.sourceUrl
+  }
+  const match = sources.find(
+    (s) =>
+      s.instrument === item.citation?.instrument && s.section === item.citation?.section,
+  )
+  return match?.sourceUrl
+}
 
 export default function ResultCards({ result }: { result: ConsultResponse }) {
   const [sourcesOpen, setSourcesOpen] = useState(false)
@@ -17,7 +34,11 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
               {' '}
               · Jurisdiction: {result.jurisdictionCountry}
               {result.jurisdictionRegion ? `, ${result.jurisdictionRegion}` : ''}
-              {result.locationSource === 'input_override' ? ' (from your input)' : result.locationSource === 'device' ? ' (from device location)' : ''}
+              {result.locationSource === 'input_override'
+                ? ' (from your input)'
+                : result.locationSource === 'device'
+                  ? ' (from device location)'
+                  : ''}
             </>
           )}
         </p>
@@ -30,14 +51,33 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
 
       <Card icon={<BookOpen className="w-5 h-5 text-legally-gold" />} title="What the law says">
         <ul className="space-y-4">
-          {result.legalAnalysis.map((item, i) => (
-            <li key={i} className="text-sm border-l-2 border-legally-gold pl-3">
-              <p>{item.point}</p>
-              <p className="mt-1 text-xs text-legally-navy/60">
-                {item.citation.instrument} — {item.citation.section} ({item.citation.jurisdiction})
-              </p>
-            </li>
-          ))}
+          {result.legalAnalysis.map((item, i) => {
+            const sourceUrl = sourceUrlForPoint(item, result.sources)
+            return (
+              <li key={i} className="text-sm border-l-2 border-legally-gold pl-3">
+                <p>{item.point}</p>
+                <p className="mt-1 text-xs text-legally-navy/60">
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-legally-gold font-medium hover:underline"
+                    >
+                      {item.citation.instrument} — {item.citation.section} (
+                      {item.citation.jurisdiction})
+                      <ExternalLink className="w-3 h-3 shrink-0" aria-hidden />
+                    </a>
+                  ) : (
+                    <>
+                      {item.citation.instrument} — {item.citation.section} (
+                      {item.citation.jurisdiction})
+                    </>
+                  )}
+                </p>
+              </li>
+            )
+          })}
         </ul>
       </Card>
 
@@ -60,15 +100,32 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
                 <p className="font-semibold">{c.name}</p>
                 <p className="text-xs text-legally-navy/60">{c.role}</p>
                 {c.phones?.length > 0 && (
-                  <p className="mt-2 font-medium text-legally-navy">
-                    {c.phones.join(' · ')}
+                  <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-medium text-legally-navy">
+                    {c.phones.map((phone) => (
+                      <a
+                        key={phone}
+                        href={phoneTelHref(phone)}
+                        className="text-legally-gold hover:underline"
+                      >
+                        {phone}
+                      </a>
+                    ))}
                   </p>
                 )}
                 {Object.keys(c.social || {}).length > 0 && (
-                  <p className="mt-1 text-xs text-legally-navy/50">
-                    {Object.entries(c.social)
-                      .map(([k, v]) => `${k}: ${v}`)
-                      .join(' · ')}
+                  <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
+                    {Object.entries(c.social).map(([platform, value]) => (
+                      <a
+                        key={platform}
+                        href={socialHref(platform, value)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-0.5 text-legally-gold font-medium hover:underline"
+                      >
+                        {platform}
+                        <ExternalLink className="w-3 h-3" aria-hidden />
+                      </a>
+                    ))}
                   </p>
                 )}
                 <p className="mt-2 text-xs text-legally-navy/70">{c.notes}</p>
@@ -94,7 +151,22 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
             <ul className="px-4 pb-4 space-y-2 text-xs text-legally-navy/70 border-t">
               {result.sources.map((s) => (
                 <li key={s.id}>
-                  <strong>{s.title}</strong> — {s.instrument} {s.section}
+                  <strong>{s.title}</strong> —{' '}
+                  {s.sourceUrl ? (
+                    <a
+                      href={s.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-legally-gold hover:underline inline-flex items-center gap-0.5"
+                    >
+                      {s.instrument} {s.section}
+                      <ExternalLink className="w-3 h-3" aria-hidden />
+                    </a>
+                  ) : (
+                    <>
+                      {s.instrument} {s.section}
+                    </>
+                  )}
                 </li>
               ))}
             </ul>

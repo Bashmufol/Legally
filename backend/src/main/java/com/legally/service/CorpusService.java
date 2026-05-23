@@ -57,6 +57,30 @@ public class CorpusService {
 
 
 
+    private static final Map<String, String> INSTRUMENT_SOURCE_URLS = Map.ofEntries(
+            Map.entry("Constitution of the Federal Republic", "https://www.nigeria-law.org/ConstitutionOfTheFederalRepublicOfNigeria.htm"),
+            Map.entry("Police Act 2020", "https://lawpadi.com/police-act-2020/"),
+            Map.entry("Administration of Criminal Justice Act", "https://www.nigeria-law.org/AdministrationOfCriminalJusticeAct2015.htm"),
+            Map.entry("Cybercrimes", "https://www.nigeria-law.org/CybercrimesAct2015.htm"),
+            Map.entry("Land Use Act", "https://www.nigeria-law.org/LandUseAct.htm"),
+            Map.entry("Evidence Act", "https://www.nigeria-law.org/EvidenceAct2011.htm"),
+            Map.entry("Legal Aid Act", "https://www.nigeria-law.org/LegalAidAct2011.htm"),
+            Map.entry("National Human Rights Commission Act", "https://www.nigeria-law.org/NationalHumanRightsCommissionAct.htm"),
+            Map.entry("Kwara State Land Administration", "https://kwara.gov.ng/"),
+            Map.entry("Kwara State Tenancy Practice", "https://kwara.gov.ng/"),
+            Map.entry("Kwara State Police Oversight", "https://www.npf.gov.ng/"),
+            Map.entry("Land Registration / Conveyancing", "https://www.nigeria-law.org/LandUseAct.htm"),
+            Map.entry("Contract / Common Law", "https://www.nigeria-law.org/"),
+            Map.entry("Tenancy Law Principles", "https://www.nigeria-law.org/"),
+            Map.entry("Pre-action Notice Practice", "https://www.nigeria-law.org/"),
+            Map.entry("Land Fraud Prevention", "https://www.nigeria-law.org/"),
+            Map.entry("Universal principles", "https://www.ohchr.org/en/international-bill-of-rights"),
+            Map.entry("Contract law — general", "https://www.ohchr.org/en/international-bill-of-rights"),
+            Map.entry("Landlord–tenant", "https://www.ohchr.org/en/international-bill-of-rights"),
+            Map.entry("Police encounters", "https://www.ohchr.org/en/special-procedures/sr-police"),
+            Map.entry("Access to legal assistance", "https://www.ohchr.org/en/special-procedures/sr-judiciary-independence")
+    );
+
     private List<LawChunk> allChunks = List.of();
 
     private final ObjectMapper objectMapper;
@@ -134,6 +158,40 @@ public class CorpusService {
             chunk.setJurisdiction(chunk.getRegionCode());
 
         }
+
+        if (chunk.getSourceUrl() == null || chunk.getSourceUrl().isBlank()) {
+
+            chunk.setSourceUrl(resolveSourceUrl(chunk.getInstrument()));
+
+        }
+
+    }
+
+    private String resolveSourceUrl(String instrument) {
+
+        if (instrument == null || instrument.isBlank()) {
+
+            return null;
+
+        }
+
+        for (Map.Entry<String, String> entry : INSTRUMENT_SOURCE_URLS.entrySet()) {
+
+            if (instrument.contains(entry.getKey())) {
+
+                return entry.getValue();
+
+            }
+
+        }
+
+        if ("INTERNATIONAL".equalsIgnoreCase(instrument) || instrument.startsWith("Universal")) {
+
+            return "https://www.ohchr.org/en/international-bill-of-rights";
+
+        }
+
+        return "https://www.nigeria-law.org/";
 
     }
 

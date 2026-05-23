@@ -19,6 +19,8 @@ public class LawChunk {
     private String title;
     private String text;
     private List<String> tags;
+    /** Public URL where this law text is published or referenced. */
+    private String sourceUrl;
 
     public String getId() {
         return id;
@@ -90,5 +92,13 @@ public class LawChunk {
 
     public void setTags(List<String> tags) {
         this.tags = tags;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
     }
 }

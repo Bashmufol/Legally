@@ -8,7 +8,10 @@ import com.legally.model.dto.ConsultResponse;
 import com.legally.model.dto.GeminiLegalResponse;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -56,6 +59,8 @@ public class ConsultService {
                 chunks,
                 request.getMedia());
 
+        enrichCitationSources(ai.getLegalAnalysis(), chunks);
+
         ConsultResponse response = new ConsultResponse();
         response.setSummary(ai.getSummary());
         response.setLegalAnalysis(ai.getLegalAnalysis());
@@ -82,6 +87,31 @@ public class ConsultService {
     /**
      * When regex text scan did not override, use Gemini on message + uploads for any country/state.
      */
+    private void enrichCitationSources(List<GeminiLegalResponse.LegalPoint> points, List<LawChunk> chunks) {
+        Map<String, LawChunk> byId = new HashMap<>();
+        for (LawChunk chunk : chunks) {
+            byId.put(chunk.getId(), chunk);
+        }
+        for (GeminiLegalResponse.LegalPoint point : points) {
+            if (point.getCitation() == null) {
+                continue;
+            }
+            LawChunk chunk = point.getChunkId() != null ? byId.get(point.getChunkId()) : null;
+            if (chunk == null) {
+                for (LawChunk c : chunks) {
+                    if (Objects.equals(c.getInstrument(), point.getCitation().getInstrument())
+                            && Objects.equals(c.getSection(), point.getCitation().getSection())) {
+                        chunk = c;
+                        break;
+                    }
+                }
+            }
+            if (chunk != null && chunk.getSourceUrl() != null && !chunk.getSourceUrl().isBlank()) {
+                point.getCitation().setSourceUrl(chunk.getSourceUrl());
+            }
+        }
+    }
+
     private JurisdictionContext applyGeminiJurisdictionOverride(
             ConsultRequest request, JurisdictionContext jurisdiction) throws Exception {
         if (jurisdiction.getLocationSource() == com.legally.model.JurisdictionContext.LocationSource.input_override) {

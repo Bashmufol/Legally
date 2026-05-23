@@ -20,6 +20,7 @@ export interface LegalCitation {
   instrument: string
   section: string
   jurisdiction: string
+  sourceUrl?: string
 }
 
 export interface LegalPoint {
@@ -36,6 +37,7 @@ export interface LawChunk {
   title: string
   text: string
   tags?: string[]
+  sourceUrl?: string
 }
 
 export interface ContactCard {

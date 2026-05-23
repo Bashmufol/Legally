@@ -108,6 +108,7 @@ public class GeminiLegalResponse {
         private String instrument = "";
         private String section = "";
         private String jurisdiction = "FEDERAL";
+        private String sourceUrl;
 
         public String getInstrument() {
             return instrument;
@@ -131,6 +132,14 @@ public class GeminiLegalResponse {
 
         public void setJurisdiction(String jurisdiction) {
             this.jurisdiction = jurisdiction;
+        }
+
+        public String getSourceUrl() {
+            return sourceUrl;
+        }
+
+        public void setSourceUrl(String sourceUrl) {
+            this.sourceUrl = sourceUrl;
         }
     }
 }
