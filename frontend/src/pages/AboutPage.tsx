@@ -2,8 +2,8 @@ import { Link } from 'react-router-dom'
 
 export default function AboutPage() {
   return (
-    <div className="max-w-3xl mx-auto px-4 py-12">
-      <h1 className="font-display text-3xl mb-6">About Legally</h1>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 py-8 sm:py-12 w-full min-w-0">
+      <h1 className="font-display text-2xl sm:text-3xl mb-6">About Legally</h1>
 
       <div className="prose prose-legally space-y-6 text-legally-navy/80 text-sm leading-relaxed">
         <p>

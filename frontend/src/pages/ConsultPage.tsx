@@ -79,8 +79,8 @@ export default function ConsultPage() {
     message.trim() || result?.summary || 'See consultation summary and attached evidence.'
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      <h1 className="font-display text-3xl mb-2">Legal consultation</h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-10 w-full min-w-0">
+      <h1 className="font-display text-2xl sm:text-3xl mb-2">Legal consultation</h1>
       <p className="text-legally-navy/70 mb-8 text-sm max-w-2xl">{helpers.intro}</p>
 
       <div className="flex flex-wrap gap-2 mb-2">
