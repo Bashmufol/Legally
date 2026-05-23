@@ -1,9 +1,13 @@
 package com.legally.service;
 
-import com.legally.firebase.LawChunkStore;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.model.LawChunk;
+import jakarta.annotation.PostConstruct;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -16,15 +20,21 @@ public class CorpusService {
             "land", List.of("land", "property", "registration", "fraud", "kwara_government")
     );
 
-    private final LawChunkStore lawChunkStore;
+    private List<LawChunk> chunks = List.of();
+    private final ObjectMapper objectMapper;
 
-    public CorpusService(LawChunkStore lawChunkStore) {
-        this.lawChunkStore = lawChunkStore;
+    public CorpusService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    void load() throws Exception {
+        try (InputStream in = new ClassPathResource("corpus/corpus.json").getInputStream()) {
+            this.chunks = objectMapper.readValue(in, new TypeReference<List<LawChunk>>() {});
+        }
     }
 
     public List<LawChunk> retrieve(String scenario, String userMessage, int limit) {
-        List<LawChunk> chunks = lawChunkStore.findAll();
-
         Set<String> activeTags = new LinkedHashSet<>();
         if (scenario != null && SCENARIO_TAGS.containsKey(scenario)) {
             activeTags.addAll(SCENARIO_TAGS.get(scenario));
@@ -75,13 +85,11 @@ public class CorpusService {
     }
 
     public Optional<LawChunk> findById(String id) {
-        return lawChunkStore.findById(id);
+        return chunks.stream().filter(c -> c.getId().equals(id)).findFirst();
     }
 
     public Set<String> validChunkIds(Collection<String> ids) {
-        Set<String> all = lawChunkStore.findAll().stream()
-                .map(LawChunk::getId)
-                .collect(Collectors.toSet());
+        Set<String> all = chunks.stream().map(LawChunk::getId).collect(Collectors.toSet());
         return ids.stream().filter(all::contains).collect(Collectors.toSet());
     }
 

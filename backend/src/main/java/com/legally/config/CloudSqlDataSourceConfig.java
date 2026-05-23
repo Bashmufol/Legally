@@ -5,7 +5,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -56,8 +56,19 @@ public class CloudSqlDataSourceConfig {
         config.setPassword(dataSourceProperties.getPassword());
         config.setDriverClassName("org.postgresql.Driver");
         config.setMaximumPoolSize(5);
+        config.setConnectionTestQuery("SELECT 1");
+        config.setInitializationFailTimeout(30_000);
 
         log.info("PostgreSQL: Cloud SQL socket mode — instance={}, database={}", instance, databaseName);
-        return new HikariDataSource(config);
+        HikariDataSource dataSource = new HikariDataSource(config);
+        try (var conn = dataSource.getConnection()) {
+            log.info("Cloud SQL connection verified");
+        } catch (Exception e) {
+            dataSource.close();
+            throw new IllegalStateException(
+                    "Could not connect to Cloud SQL. For IntelliJ/Postman use profile 'local' + Docker Postgres. "
+                            + "For Cloud SQL locally run: gcloud auth application-default login", e);
+        }
+        return dataSource;
     }
 }

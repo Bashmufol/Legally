@@ -1,19 +1,31 @@
 package com.legally.service;
 
-import com.legally.firebase.ContactStore;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.model.ContactCard;
+import jakarta.annotation.PostConstruct;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class ContactService {
 
-    private final ContactStore contactStore;
+    private List<ContactCard> contacts = List.of();
+    private final ObjectMapper objectMapper;
 
-    public ContactService(ContactStore contactStore) {
-        this.contactStore = contactStore;
+    public ContactService(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
+    }
+
+    @PostConstruct
+    void load() throws Exception {
+        try (InputStream in = new ClassPathResource("contacts/contacts.json").getInputStream()) {
+            this.contacts = objectMapper.readValue(in, new TypeReference<List<ContactCard>>() {});
+        }
     }
 
     public List<ContactCard> byTags(Collection<String> tags) {
@@ -25,7 +37,7 @@ public class ContactService {
                 .collect(Collectors.toSet());
 
         LinkedHashMap<String, ContactCard> result = new LinkedHashMap<>();
-        for (ContactCard card : contactStore.findAll()) {
+        for (ContactCard card : contacts) {
             if (card.getTags() == null) continue;
             for (String tag : card.getTags()) {
                 if (wanted.contains(tag.toLowerCase(Locale.ROOT))) {
@@ -38,6 +50,6 @@ public class ContactService {
     }
 
     public List<ContactCard> all() {
-        return contactStore.findAll();
+        return Collections.unmodifiableList(contacts);
     }
 }
