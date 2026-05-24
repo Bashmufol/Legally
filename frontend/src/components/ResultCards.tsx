@@ -42,13 +42,9 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
             </>
           )}
         </p>
-        {result.corpusLimited && (
-          <p className="mt-1 text-xs text-amber-800">
-            Limited local law corpus for this jurisdiction. Verify with a licensed lawyer.
-          </p>
-        )}
       </Card>
 
+      {result.legalAnalysis.length > 0 && (
       <Card icon={<BookOpen className="w-5 h-5 text-legally-gold" />} title="What the law says">
         <ul className="space-y-4">
           {result.legalAnalysis.map((item, i) => {
@@ -80,6 +76,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
           })}
         </ul>
       </Card>
+      )}
 
       <Card icon={<ListOrdered className="w-5 h-5 text-legally-gold" />} title="Legal steps">
         <ol className="list-decimal list-inside space-y-2 text-sm">
@@ -99,7 +96,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
               >
                 <p className="font-semibold">{c.name}</p>
                 <p className="text-xs text-legally-navy/60">{c.role}</p>
-                {c.phones?.length > 0 && (
+                {c.phones && c.phones.length > 0 && (
                   <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 font-medium text-legally-navy">
                     {c.phones.map((phone) => (
                       <a
@@ -108,6 +105,19 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
                         className="text-legally-gold hover:underline"
                       >
                         {phone}
+                      </a>
+                    ))}
+                  </p>
+                )}
+                {c.emails && c.emails.length > 0 && (
+                  <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+                    {c.emails.map((email) => (
+                      <a
+                        key={email}
+                        href={`mailto:${email}`}
+                        className="text-legally-gold hover:underline"
+                      >
+                        {email}
                       </a>
                     ))}
                   </p>
@@ -128,7 +138,22 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
                     ))}
                   </p>
                 )}
-                <p className="mt-2 text-xs text-legally-navy/70">{c.notes}</p>
+                {c.sourceUrl && (
+                  <p className="mt-2 text-xs">
+                    <a
+                      href={c.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-legally-gold hover:underline inline-flex items-center gap-0.5"
+                    >
+                      Source
+                      <ExternalLink className="w-3 h-3" aria-hidden />
+                    </a>
+                  </p>
+                )}
+                {c.notes && (
+                  <p className="mt-2 text-xs text-legally-navy/70">{c.notes}</p>
+                )}
               </div>
             ))}
           </div>
@@ -142,9 +167,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
             onClick={() => setSourcesOpen(!sourcesOpen)}
             className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
           >
-            {result.sources.some((s) => s.id?.startsWith('web'))
-              ? 'Official web sources'
-              : 'Sources from Legally corpus'}
+            Official web sources
             <ChevronDown
               className={`w-4 h-4 transition ${sourcesOpen ? 'rotate-180' : ''}`}
             />

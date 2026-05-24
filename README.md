@@ -2,15 +2,15 @@
 
 Legally is an AI-powered legal information platform that helps people understand their rights, see what the law says, and take practical next steps—without needing a law degree or an expensive lawyer on call.
 
-Users can consult via text, voice, images, PDFs, or video. The system detects jurisdiction from device location and honors explicit country or state mentions in the user’s input. Responses are grounded in a curated legal corpus with source links, actionable steps, and verified public contact details. Users can also draft agreements and formal letters tailored to their jurisdiction, preview them, and download PDFs.
+Users can consult via text, voice, images, PDFs, or video. The system detects jurisdiction from device location and honors explicit country or state mentions in the user’s input. Answers are grounded in official web sources (government and court sites), with SerpApi search, page excerpts, and Gemini summarization. If that fails, Gemini Google Search grounding is used; if both fail, the user gets a clear “no information” message with practical suggestions. Contact cards show only phone numbers, emails, or social links visible in search results. Users can also draft agreements and formal letters tailored to their jurisdiction, preview them, and download PDFs.
 
 ## Features
 
 - **Legal consultations** — scenario-based guidance (police interactions, tenancy, land, employment, and more)
 - **Multimodal input** — text, voice recordings, documents, and video evidence
 - **Global jurisdiction** — automatic location detection with input-based override
-- **Grounded citations** — each point tied to corpus sources with external reference links
-- **Curated contacts** — clickable phone numbers and official social or web channels
+- **Official web citations** — each point tied to source URLs from filtered government and court sites
+- **Web-discovered contacts** — phones, emails, or social handles only when shown in search snippets
 - **Document drafting** — rent agreements, land contracts, NDAs, demand letters, and other templates
 
 ## Architecture
@@ -22,7 +22,17 @@ Users can consult via text, voice, images, PDFs, or video. The system detects ju
 | Authentication | Firebase Anonymous Auth |
 | File storage | Firebase Storage (local filesystem in dev) |
 | AI | Google Gemini API |
+| Web search | SerpApi (official-domain filtered legal search; open search for contacts) |
 | Web app | React, TypeScript, Tailwind CSS, Vite |
+
+### Consultation flow
+
+1. Resolve jurisdiction (device location, user input, or Gemini detection from media).
+2. **SerpApi** — search official legal domains, fetch page text.
+3. **Gemini** — summarize only from retrieved excerpts with source URLs.
+4. If no hits: **Gemini `google_search` grounding** on official sources.
+5. If still no citable law: **no-information response** + AI-generated practical suggestions (no invented statutes).
+6. **Contacts** — separate SerpApi queries; parse snippets for visible phone, email, or social links.
 
 ## Prerequisites
 
@@ -31,6 +41,7 @@ Users can consult via text, voice, images, PDFs, or video. The system detects ju
 - Docker (for local PostgreSQL)
 - A [Firebase](https://console.firebase.google.com/) project with Anonymous Auth and Storage enabled
 - A [Gemini API](https://ai.google.dev/) key
+- A [SerpApi](https://serpapi.com/) key (recommended for web research)
 
 ## Local development
 
@@ -84,16 +95,14 @@ Uploads are stored under `backend/uploads/`. Consultation history is not persist
 | Variable | Description |
 |----------|-------------|
 | `GEMINI_API_KEY` | Google Gemini API key |
+| `SERPAPI_API_KEY` | SerpApi key for official web search and contact discovery |
+| `SERPAPI_ENABLED` | Set `true` to enable SerpApi (default) |
 | `DATABASE_MODE` | `local`, `cloud-sql`, or `direct` |
 | `FIREBASE_*` | Firebase project and credentials |
 | `CORS_ALLOWED_ORIGINS` | Allowed frontend origins |
 | `VITE_API_URL` | Backend URL for the web app |
 
 See `backend/.env.example` and `frontend/.env.example` for the full list.
-
-## Legal corpus
-
-Statutes and guidance live in `backend/src/main/resources/corpus/` as JSON chunks (`countryCode`, `regionCode`, `tags`, `sourceUrl`). Contacts are in `backend/src/main/resources/contacts/contacts.json`.
 
 ## Production deployment
 

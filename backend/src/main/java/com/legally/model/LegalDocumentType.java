@@ -36,7 +36,7 @@ public enum LegalDocumentType {
         }
     }
 
-    public String corpusScenario() {
+    public String researchScenario() {
         return switch (this) {
             case DEMAND_LETTER, RENT_AGREEMENT -> "tenancy";
             case LAND_PURCHASE -> "land";

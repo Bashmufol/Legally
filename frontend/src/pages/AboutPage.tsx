@@ -9,7 +9,7 @@ export default function AboutPage() {
         <p>
           <strong>Legally</strong> improves access to justice for people who cannot afford private
           lawyers anywhere in the world. The platform is designed to scale across countries with
-          national, federal, and state-level law where data is available.
+          national, federal, and state-level law where official sources are available online.
         </p>
 
         <h2 className="font-display text-xl text-legally-navy">What Legally is for</h2>
@@ -42,7 +42,7 @@ export default function AboutPage() {
             <strong>Plain language</strong>: no law degree required to understand the answer.
           </li>
           <li>
-            <strong>Grounded citations</strong>: summaries tied to a curated legal corpus, not invented statutes.
+            <strong>Official web sources</strong>: answers cite government and authoritative sites, not invented statutes.
           </li>
           <li>
             <strong>Works worldwide</strong>: your location is detected automatically; mention another country in your message or uploads to switch jurisdiction.
@@ -51,7 +51,7 @@ export default function AboutPage() {
             <strong>Multimodal</strong>: text, voice, images, PDFs, and video evidence.
           </li>
           <li>
-            <strong>Official contacts</strong>: curated public numbers and agencies when you need to escalate.
+            <strong>Contacts from the web</strong>: phone numbers, emails, or social links shown only when they appear in official search results (always verify before use).
           </li>
           <li>
             <strong>Document drafting</strong>: generate agreements and letters for your jurisdiction, preview, and download as PDF.
@@ -65,9 +65,9 @@ export default function AboutPage() {
           Go to <Link to="/consult" className="text-legally-gold font-semibold hover:underline">Consult</Link>,
           pick a situation (police interaction, tenancy, land, employment, and more), and describe your case.
           Attach a lease, ID photo, voice memo, or video if helpful. Tap <strong>Get legal guidance</strong> to
-          receive a summary, what the law says (with sources), practical steps, and contact cards. Allow
-          location access so laws match where you are; say &quot;under Nigerian law&quot; (or any country) in your
-          text to override.
+          receive a summary, what the law says (with source links), practical steps, and contact cards when
+          visible details are found. Allow location access so laws match where you are; say &quot;under Nigerian law&quot;
+          (or any country) in your text to override.
         </p>
 
         <h3 className="font-semibold text-legally-navy mt-4">Draft legal documents</h3>
@@ -89,23 +89,21 @@ export default function AboutPage() {
           Signed-in sessions (anonymous, in the background) can revisit recent consultations from the Consult page.
         </p>
 
-        <h2 className="font-display text-xl text-legally-navy">Legal corpus</h2>
+        <h2 className="font-display text-xl text-legally-navy">How research works</h2>
         <p>
-          Answers are grounded in a curated legal corpus (constitutions, federal acts, and state or
-          regional guidance). The app automatically detects your country and state from your device
-          location and applies laws for that jurisdiction. If you mention a different country or state
-          in your message, voice recording, or uploaded documents (any country), that location
-          overrides device detection. Core coverage includes Nigerian federal and
-          state sources plus international principles; additional country corpora can be added.
-          Citations reference the corpus, not
-          invented law.
+          For every jurisdiction, Legally searches official government and court websites via SerpApi,
+          fetches page excerpts, and asks Gemini to summarize only from those sources. If that fails,
+          Gemini uses Google Search grounding as a second attempt. If neither path returns citable
+          official material, you see a clear &quot;no information&quot; message with practical suggestions—not
+          invented law. Contacts are discovered the same way: only numbers, emails, or social handles
+          that appear in search snippets are shown.
         </p>
 
         <h2 className="font-display text-xl text-legally-navy">Limitations</h2>
         <p>
-          Legally does not replace a licensed lawyer. Laws change; outcomes depend on facts. Contact
-          numbers are curated from public sources only. Always verify critical steps with qualified
-          counsel.
+          Legally does not replace a licensed lawyer. Laws change; outcomes depend on facts. Web sources
+          may be incomplete or temporarily unavailable. Always verify contact details and critical steps
+          with qualified counsel.
         </p>
 
         <p className="flex flex-wrap gap-4">

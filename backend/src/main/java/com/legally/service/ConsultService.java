@@ -3,13 +3,12 @@ package com.legally.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
-import com.legally.model.WebLegalSource;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.ConsultResponse;
 import com.legally.model.dto.GeminiLegalResponse;
+import com.legally.model.dto.LegalResearchResult;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,31 +18,28 @@ import java.util.Optional;
 @Service
 public class ConsultService {
 
-    private final CorpusService corpusService;
+    private final LegalResearchOrchestrator legalResearchOrchestrator;
     private final GeminiService geminiService;
     private final JurisdictionService jurisdictionService;
-    private final ContactService contactService;
+    private final ContactResearchService contactResearchService;
     private final ConsultationHistoryService consultationHistoryService;
     private final UserService userService;
-    private final WebResearchService webResearchService;
     private final ObjectMapper objectMapper;
 
     public ConsultService(
-            CorpusService corpusService,
+            LegalResearchOrchestrator legalResearchOrchestrator,
             GeminiService geminiService,
             JurisdictionService jurisdictionService,
-            ContactService contactService,
+            ContactResearchService contactResearchService,
             ConsultationHistoryService consultationHistoryService,
             UserService userService,
-            WebResearchService webResearchService,
             ObjectMapper objectMapper) {
-        this.corpusService = corpusService;
+        this.legalResearchOrchestrator = legalResearchOrchestrator;
         this.geminiService = geminiService;
         this.jurisdictionService = jurisdictionService;
-        this.contactService = contactService;
+        this.contactResearchService = contactResearchService;
         this.consultationHistoryService = consultationHistoryService;
         this.userService = userService;
-        this.webResearchService = webResearchService;
         this.objectMapper = objectMapper;
     }
 
@@ -57,46 +53,20 @@ public class ConsultService {
         JurisdictionContext jurisdiction = jurisdictionService.resolve(jurisdictionRequest);
         jurisdiction = applyGeminiJurisdictionOverride(jurisdictionRequest, jurisdiction);
 
-        boolean useNigerianCorpus = usesNigerianCorpus(jurisdiction);
+        LegalResearchResult research = legalResearchOrchestrator.research(
+                messageText,
+                request.getScenario(),
+                jurisdiction,
+                request.getMedia());
 
-        List<LawChunk> chunks;
-        GeminiLegalResponse ai;
-        String disclaimer;
-
-        if (useNigerianCorpus) {
-            chunks = corpusService.retrieve(jurisdiction, request.getScenario(), messageText, 8);
-            ai = geminiService.analyze(
-                    messageText,
-                    request.getScenario(),
-                    jurisdiction,
-                    chunks,
-                    request.getMedia());
-            disclaimer = jurisdictionService.disclaimerFor(jurisdiction);
-        } else {
-            List<WebLegalSource> webSources = webResearchService.research(
-                    jurisdiction, request.getScenario(), messageText);
-            if (!webSources.isEmpty()) {
-                chunks = webResearchService.toLawChunks(webSources, jurisdiction);
-                ai = geminiService.analyzeFromWebSources(
-                        messageText,
-                        request.getScenario(),
-                        jurisdiction,
-                        webSources,
-                        request.getMedia());
-            } else {
-                ai = geminiService.analyzeWithGoogleSearchGrounding(
-                        messageText,
-                        request.getScenario(),
-                        jurisdiction,
-                        request.getMedia());
-                chunks = buildGroundingSources(ai, jurisdiction);
-            }
-            disclaimer = ai.getDisclaimer() != null && !ai.getDisclaimer().isBlank()
-                    ? ai.getDisclaimer()
-                    : jurisdictionService.disclaimerFor(jurisdiction);
-        }
+        GeminiLegalResponse ai = research.getResponse();
+        List<LawChunk> chunks = research.getSources();
 
         enrichCitationSources(ai.getLegalAnalysis(), chunks);
+
+        String disclaimer = ai.getDisclaimer() != null && !ai.getDisclaimer().isBlank()
+                ? ai.getDisclaimer()
+                : jurisdictionService.disclaimerFor(jurisdiction);
 
         ConsultResponse response = new ConsultResponse();
         response.setSummary(ai.getSummary());
@@ -104,49 +74,17 @@ public class ConsultService {
         response.setSteps(ai.getSteps());
         response.setDemandLetterEligible(ai.isDemandLetterEligible());
         response.setConfidence(ai.getConfidence());
-        response.setDisclaimer(ai.getDisclaimer() != null && !ai.getDisclaimer().isBlank()
-                ? ai.getDisclaimer() : disclaimer);
+        response.setDisclaimer(disclaimer);
         response.setJurisdictionCountry(jurisdiction.getCountryName());
         response.setJurisdictionRegion(jurisdiction.getRegionName());
         response.setLocationSource(jurisdiction.getLocationSource().name());
-        response.setCorpusLimited(useNigerianCorpus && jurisdiction.isCorpusLimited());
+        response.setCorpusLimited(false);
         response.setSources(chunks);
-        response.setContacts(contactService.byTags(ai.getSuggestedContactTags()));
-
-        if (response.getContacts().isEmpty()) {
-            response.setContacts(contactService.byTags(List.of("legal_aid")));
-        }
+        response.setContacts(contactResearchService.findContacts(
+                jurisdiction, request.getScenario(), messageText));
 
         consultationHistoryService.save(request, response, objectMapper.writeValueAsString(response));
         return response;
-    }
-
-    private static boolean usesNigerianCorpus(JurisdictionContext jurisdiction) {
-        return jurisdiction.getCountryCode() != null
-                && "NG".equalsIgnoreCase(jurisdiction.getCountryCode());
-    }
-
-    private List<LawChunk> buildGroundingSources(GeminiLegalResponse ai, JurisdictionContext jurisdiction) {
-        List<LawChunk> chunks = new ArrayList<>();
-        int i = 0;
-        for (GeminiLegalResponse.LegalPoint point : ai.getLegalAnalysis()) {
-            if (point.getCitation() == null || point.getCitation().getSourceUrl() == null) {
-                continue;
-            }
-            String url = point.getCitation().getSourceUrl();
-            LawChunk c = new LawChunk();
-            c.setId("web-ground-" + i++);
-            c.setCountryCode(jurisdiction.getCountryCode());
-            c.setRegionCode(jurisdiction.getRegionCode());
-            c.setJurisdiction(jurisdiction.getCountryCode());
-            c.setInstrument(point.getCitation().getInstrument());
-            c.setSection(point.getCitation().getSection());
-            c.setTitle(point.getCitation().getInstrument());
-            c.setText(point.getPoint());
-            c.setSourceUrl(url);
-            chunks.add(c);
-        }
-        return chunks;
     }
 
     private void validateConsultInput(ConsultRequest request) {
@@ -154,7 +92,7 @@ public class ConsultService {
         boolean hasMedia = request.getMedia() != null && !request.getMedia().isEmpty();
         if (!hasMessage && !hasMedia) {
             throw new IllegalArgumentException(
-                    "Provide a written description, a voice recording, or an uploaded file (or any combination).");
+                    "Provide a written description, a voice recording, or an uploaded file (or combination).");
         }
     }
 

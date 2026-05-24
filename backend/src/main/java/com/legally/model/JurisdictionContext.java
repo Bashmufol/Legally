@@ -1,7 +1,7 @@
 package com.legally.model;
 
 /**
- * Resolved country + region for legal analysis and corpus retrieval.
+ * Resolved country + region for legal analysis and web research.
  */
 public class JurisdictionContext {
 

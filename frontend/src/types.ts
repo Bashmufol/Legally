@@ -42,12 +42,14 @@ export interface LawChunk {
 
 export interface ContactCard {
   id: string
-  tags: string[]
+  tags?: string[]
   name: string
   role: string
-  phones: string[]
-  social: Record<string, string>
-  notes: string
+  phones?: string[]
+  emails?: string[]
+  social?: Record<string, string>
+  sourceUrl?: string
+  notes?: string
 }
 
 export interface JurisdictionFields {

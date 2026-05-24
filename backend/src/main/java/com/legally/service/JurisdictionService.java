@@ -11,8 +11,6 @@ import java.util.regex.Pattern;
 @Service
 public class JurisdictionService {
 
-    private static final String DEFAULT_DISCLAIMER_SUFFIX =
-            " Local law corpus may be limited for your jurisdiction; verify with a licensed lawyer in your country.";
 
     private static final Map<String, String> COUNTRY_NAMES = Map.ofEntries(
             Map.entry("NG", "Nigeria"),
@@ -55,7 +53,7 @@ public class JurisdictionService {
             JurisdictionContext ctx = fromMessage.get();
             ctx.setLocationSource(LocationSource.input_override);
             enrichNames(ctx);
-            ctx.setCorpusLimited(!"NG".equalsIgnoreCase(ctx.getCountryCode()));
+            ctx.setCorpusLimited(false);
             return ctx;
         }
 
@@ -63,7 +61,7 @@ public class JurisdictionService {
             JurisdictionContext ctx = fromRequestFields(request);
             ctx.setLocationSource(LocationSource.device);
             enrichNames(ctx);
-            ctx.setCorpusLimited(!"NG".equalsIgnoreCase(ctx.getCountryCode()));
+            ctx.setCorpusLimited(false);
             return ctx;
         }
 
@@ -73,17 +71,13 @@ public class JurisdictionService {
     public JurisdictionContext applyDetectedOverride(JurisdictionContext detected) {
         detected.setLocationSource(LocationSource.input_override);
         enrichNames(detected);
-        detected.setCorpusLimited(!"NG".equalsIgnoreCase(detected.getCountryCode()));
+        detected.setCorpusLimited(false);
         return detected;
     }
 
     public String disclaimerFor(JurisdictionContext ctx) {
-        String base = "Legally provides general legal information only, not legal advice. "
+        return "Legally provides general legal information from official web sources only, not legal advice. "
                 + "Consult a licensed lawyer in " + ctx.getCountryName() + " for your specific case.";
-        if (ctx.isCorpusLimited()) {
-            return base + DEFAULT_DISCLAIMER_SUFFIX;
-        }
-        return base;
     }
 
     private Optional<JurisdictionContext> extractFromText(String text) {
@@ -158,7 +152,7 @@ public class JurisdictionService {
     private JurisdictionContext defaultContext() {
         JurisdictionContext ctx = new JurisdictionContext(
                 "INT", "International", "GENERAL", "General",
-                LocationSource.default_fallback, true);
+                LocationSource.default_fallback, false);
         return ctx;
     }
 

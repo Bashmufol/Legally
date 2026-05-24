@@ -2,6 +2,7 @@ package com.legally.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -12,8 +13,10 @@ public class ContactCard {
     private List<String> tags;
     private String name;
     private String role;
-    private List<String> phones;
+    private List<String> phones = new ArrayList<>();
+    private List<String> emails = new ArrayList<>();
     private Map<String, String> social;
+    private String sourceUrl;
     private String notes;
 
     public String getId() {
@@ -54,6 +57,22 @@ public class ContactCard {
 
     public void setPhones(List<String> phones) {
         this.phones = phones;
+    }
+
+    public List<String> getEmails() {
+        return emails;
+    }
+
+    public void setEmails(List<String> emails) {
+        this.emails = emails;
+    }
+
+    public String getSourceUrl() {
+        return sourceUrl;
+    }
+
+    public void setSourceUrl(String sourceUrl) {
+        this.sourceUrl = sourceUrl;
     }
 
     public Map<String, String> getSocial() {

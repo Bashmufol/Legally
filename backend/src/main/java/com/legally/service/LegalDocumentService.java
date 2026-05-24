@@ -3,6 +3,7 @@ package com.legally.service;
 import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
 import com.legally.model.LegalDocumentType;
+import com.legally.model.WebLegalSource;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.LegalDocumentRequest;
 import com.legally.model.dto.LegalDocumentResponse;
@@ -18,17 +19,17 @@ public class LegalDocumentService {
             "This document is generated for informational purposes only. "
                     + "It is not legal advice. Have a licensed lawyer in your jurisdiction review and adapt it before signing or relying on it.";
 
-    private final CorpusService corpusService;
+    private final WebResearchService webResearchService;
     private final GeminiService geminiService;
     private final JurisdictionService jurisdictionService;
     private final UserService userService;
 
     public LegalDocumentService(
-            CorpusService corpusService,
+            WebResearchService webResearchService,
             GeminiService geminiService,
             JurisdictionService jurisdictionService,
             UserService userService) {
-        this.corpusService = corpusService;
+        this.webResearchService = webResearchService;
         this.geminiService = geminiService;
         this.jurisdictionService = jurisdictionService;
         this.userService = userService;
@@ -56,8 +57,9 @@ public class LegalDocumentService {
                     .orElse(jurisdiction);
         }
 
-        List<LawChunk> chunks = corpusService.retrieve(
-                jurisdiction, docType.corpusScenario(), combinedFacts, 8);
+        List<WebLegalSource> webSources = webResearchService.research(
+                jurisdiction, docType.researchScenario(), combinedFacts);
+        List<LawChunk> chunks = webResearchService.toLawChunks(webSources, jurisdiction);
 
         String title = resolveTitle(docType, request);
         String content = geminiService.generateLegalDocument(

@@ -40,55 +40,84 @@ public class GeminiService {
         this.storageService = storageService;
     }
 
-    public GeminiLegalResponse analyze(
-            String userMessage,
-            String scenario,
-            JurisdictionContext jurisdiction,
-            List<LawChunk> chunks,
-            List<ConsultRequest.MediaRef> media) throws Exception {
+    /**
+     * Returned when SerpApi and Gemini google_search grounding both fail to produce citable law.
+     */
+    public GeminiLegalResponse buildNoInformationResponse(
+            String userMessage, String scenario, JurisdictionContext jurisdiction) throws Exception {
+        GeminiLegalResponse r = new GeminiLegalResponse();
+        r.setSummary(
+                "We could not find reliable official legal information for "
+                        + jurisdiction.displayLabel()
+                        + " at this time. Please try again later, or rephrase your question with the country and state or province.");
+        r.setLegalAnalysis(List.of());
+        r.setConfidence("low");
+        r.setDisclaimer(defaultDisclaimer(jurisdiction));
+        r.setSuggestedContactTags(List.of("legal_aid"));
+        r.setDemandLetterEligible(false);
+        r.setSteps(suggestNextSteps(userMessage, scenario, jurisdiction));
+        return r;
+    }
 
+    private List<String> suggestNextSteps(
+            String userMessage, String scenario, JurisdictionContext jurisdiction) {
         String apiKey = properties.getGemini().getApiKey();
         if (apiKey == null || apiKey.isBlank()) {
-            return fallbackResponse(userMessage, jurisdiction, chunks);
+            return defaultNoInfoSteps(jurisdiction);
         }
 
-        String prompt = buildUserPrompt(userMessage, scenario, jurisdiction, chunks);
-        List<Map<String, Object>> parts = new ArrayList<>();
-        parts.add(Map.of("text", prompt));
-
-        if (media != null) {
-            for (ConsultRequest.MediaRef ref : media) {
-                attachMedia(parts, ref);
-            }
-        }
+        String prompt = """
+                The user asked about a legal situation but no official sources could be retrieved.
+                Do NOT state what the law is. Do NOT invent statutes, cases, or phone numbers.
+                Return ONLY a JSON array of 3-5 short practical next steps (strings) for a non-lawyer in %s.
+                Scenario hint: %s
+                User message: %s
+                """.formatted(
+                jurisdiction.displayLabel(),
+                scenario != null ? scenario : "general",
+                userMessage != null && !userMessage.isBlank() ? userMessage : "(not provided)");
 
         Map<String, Object> body = Map.of(
-                "systemInstruction", Map.of("parts", List.of(Map.of("text", systemInstruction(jurisdiction)))),
-                "contents", List.of(Map.of("role", "user", "parts", parts)),
+                "contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", prompt)))),
                 "generationConfig", Map.of(
-                        "temperature", 0.2,
-                        "responseMimeType", "application/json"
-                )
-        );
+                        "temperature", 0.3,
+                        "responseMimeType", "application/json"));
 
         try {
             String responseBody = callGemini(apiKey, body);
-            return parseResponse(responseBody, jurisdiction, chunks);
-        } catch (ResourceAccessException e) {
-            log.warn("Gemini API unreachable (network/DNS): {}", e.getMessage());
-            return networkFallbackResponse(userMessage, jurisdiction, chunks);
-        } catch (RestClientResponseException e) {
-            log.warn("Gemini API error {}: {}", e.getStatusCode(), e.getResponseBodyAsString());
-            if (e.getStatusCode().value() == 404) {
-                return networkFallbackResponse(userMessage, jurisdiction, chunks,
-                        "Gemini model not found. Set GEMINI_MODEL=gemini-2.0-flash in backend/.env and restart.");
+            JsonNode root = objectMapper.readTree(responseBody);
+            String text = root.path("candidates").path(0).path("content").path("parts").path(0).path("text").asText("");
+            text = text.replace("```json", "").replace("```", "").trim();
+            JsonNode arr = objectMapper.readTree(text);
+            if (arr.isArray() && !arr.isEmpty()) {
+                List<String> steps = new ArrayList<>();
+                for (JsonNode node : arr) {
+                    String s = node.asText("").trim();
+                    if (!s.isBlank()) {
+                        steps.add(s);
+                    }
+                }
+                if (!steps.isEmpty()) {
+                    return steps;
+                }
             }
-            throw e;
+        } catch (Exception e) {
+            log.warn("Could not generate no-info suggestions: {}", e.getMessage());
         }
+        return defaultNoInfoSteps(jurisdiction);
+    }
+
+    private List<String> defaultNoInfoSteps(JurisdictionContext jurisdiction) {
+        return List.of(
+                "Rephrase your question with the full country name and state or province if relevant.",
+                "Try again in a few minutes; official web sources may be temporarily unavailable.",
+                "Search your government's justice or legal-aid website directly for current guidance.",
+                "Consult a licensed lawyer in " + jurisdiction.getCountryName() + " before taking irreversible action.",
+                "Keep written records, photos, and dates of everything related to your situation.");
     }
 
     /**
-     * Non-Nigeria path: summarize only from backend-filtered official web excerpts.
+     * Summarize only from backend-filtered official web excerpts.
      */
     public GeminiLegalResponse analyzeFromWebSources(
             String userMessage,
@@ -384,7 +413,7 @@ public class GeminiService {
                 
                 Rules:
                 1. Draft the complete document in clear formal English appropriate for the stated jurisdiction.
-                2. Ground obligations and rights in the provided corpus excerpts where relevant; cite section references inline in parentheses.
+                2. Ground obligations and rights in the provided official web excerpts where relevant; cite sources inline in parentheses.
                 3. Use placeholders in square brackets only where user-specific data is missing (e.g. [PARTY A NAME], [DATE], [PROPERTY ADDRESS]).
                 4. Include standard sections: title, parties, recitals/background, operative terms, signatures, witness lines if customary.
                 5. Add a short footer line: "Generated by Legally. Review with a licensed lawyer before execution."
@@ -395,7 +424,7 @@ public class GeminiService {
                 %s
                 %s
                 
-                Corpus excerpts (use for legal grounding):
+                Official web excerpts (use for legal grounding):
                 %s
                 """.formatted(
                 documentType.name(),
@@ -668,7 +697,7 @@ public class GeminiService {
                 2. chunkId may be omitted if no webSources list; always include sourceUrl in citations.
                 3. If law varies by state/province, mention that clearly.
                 4. Never invent phone numbers. suggestedContactTags: legal_aid, police, tenant, tenancy, land.
-                5. Output ONLY valid JSON with the same schema as corpus mode (include sourceUrl in each citation).
+                5. Output ONLY valid JSON (include sourceUrl in each citation).
                 """.formatted(
                 jurisdiction.displayLabel(),
                 jurisdiction.getCountryCode(),
@@ -729,109 +758,6 @@ public class GeminiService {
             }
         }
         parsed.setLegalAnalysis(filtered);
-    }
-
-    private GeminiLegalResponse networkFallbackResponse(
-            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
-        return networkFallbackResponse(userMessage, jurisdiction, chunks,
-                "Could not reach Google Gemini (network or DNS). Showing corpus-based guidance. "
-                        + "Check your internet connection, DNS, firewall/VPN, then retry.");
-    }
-
-    private GeminiLegalResponse networkFallbackResponse(
-            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks, String summaryPrefix) {
-        GeminiLegalResponse r = fallbackResponse(userMessage, jurisdiction, chunks);
-        r.setSummary(summaryPrefix + " " + r.getSummary());
-        r.setConfidence("low");
-        return r;
-    }
-
-    private GeminiLegalResponse fallbackResponse(
-            String userMessage, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
-        GeminiLegalResponse r = new GeminiLegalResponse();
-        r.setSummary("Below is information from the Legally legal corpus relevant to your query in "
-                + jurisdiction.displayLabel() + ".");
-        r.setDisclaimer(defaultDisclaimer(jurisdiction));
-        r.setConfidence("medium");
-        r.setSuggestedContactTags(List.of("legal_aid"));
-
-        List<GeminiLegalResponse.LegalPoint> points = new ArrayList<>();
-        for (LawChunk c : chunks.stream().limit(4).toList()) {
-            GeminiLegalResponse.LegalPoint p = new GeminiLegalResponse.LegalPoint();
-            p.setPoint(c.getTitle() + ": " + abbreviate(c.getText(), 200));
-            p.setChunkId(c.getId());
-            GeminiLegalResponse.Citation cit = new GeminiLegalResponse.Citation();
-            cit.setInstrument(c.getInstrument());
-            cit.setSection(c.getSection());
-            cit.setJurisdiction(c.getJurisdiction());
-            p.setCitation(cit);
-            points.add(p);
-        }
-        r.setLegalAnalysis(points);
-        r.setSteps(List.of(
-                "Document everything (dates, names, photos, videos).",
-                "Send a written complaint to the relevant authority.",
-                "Seek Legal Aid or a qualified lawyer if the matter escalates.",
-                "Do not sign documents or pay bribes under pressure."
-        ));
-
-        String lower = userMessage.toLowerCase(Locale.ROOT);
-        if (lower.contains("police") || lower.contains("phone")) {
-            r.setSuggestedContactTags(List.of("police", "legal_aid"));
-        } else if (lower.contains("rent") || lower.contains("tenant")) {
-            r.setSuggestedContactTags(List.of("tenancy", "legal_aid", "tenant"));
-            r.setDemandLetterEligible(true);
-        } else if (lower.contains("land")) {
-            r.setSuggestedContactTags(List.of("land", "kwara_government"));
-        }
-
-        return r;
-    }
-
-    private String systemInstruction(JurisdictionContext jurisdiction) {
-        String corpusNote = jurisdiction.isCorpusLimited()
-                ? " The retrieved corpus may be limited for this country; apply general principles from chunks and clearly note when local statutes are not in the corpus."
-                : "";
-        return """
-                You are Legally, a global legal INFORMATION assistant (not a lawyer).
-                Active jurisdiction: %s (country code %s, region %s).
-                Rules:
-                1. Analyze under the active jurisdiction above (already resolved from device location or explicit mentions in text/media).
-                2. Only cite laws from the provided retrievedChunks JSON. Each legal point MUST include chunkId matching a chunk id.
-                3. Use plain English accessible to non-lawyers. Prefer commas and short sentences; avoid em dashes unless truly needed.
-                4. Never invent phone numbers or contacts. Only return suggestedContactTags from: police, tenant, tenancy, land, legal_aid, kwara_government, fundamental_rights.
-                5. Set demandLetterEligible true only for tenancy/contract disputes where a demand letter is appropriate.
-                6. Output ONLY valid JSON matching this schema:
-                {
-                  "summary": "string",
-                  "legalAnalysis": [{"point":"string","chunkId":"string","citation":{"instrument":"string","section":"string","jurisdiction":"string"}}],
-                  "steps": ["string"],
-                  "suggestedContactTags": ["string"],
-                  "demandLetterEligible": false,
-                  "confidence": "high|medium|low",
-                  "disclaimer": "string"
-                }
-                %s
-                """.formatted(
-                jurisdiction.displayLabel(),
-                jurisdiction.getCountryCode(),
-                jurisdiction.getRegionName(),
-                corpusNote);
-    }
-
-    private String buildUserPrompt(
-            String userMessage, String scenario, JurisdictionContext jurisdiction, List<LawChunk> chunks) {
-        String messageBlock = userMessage != null && !userMessage.isBlank()
-                ? userMessage
-                : "(No typed message. The user submitted voice recordings and/or uploaded files only. "
-                        + "Analyze all attached media to understand their situation and answer fully.)";
-        return "Scenario: " + (scenario != null ? scenario : "general")
-                + "\nResolved jurisdiction (may be overridden by explicit mentions in message/media): "
-                + jurisdiction.getCountryName() + " / " + jurisdiction.getRegionName()
-                + " (source: " + jurisdiction.getLocationSource() + ")"
-                + "\nUser message: " + messageBlock
-                + "\n\nIf attached images, video, or audio mention a location, extract country and region and apply that jurisdiction."
-                + "\n\nretrievedChunks:\n" + formatChunks(chunks);
     }
 
     private String formatChunks(List<LawChunk> chunks) {
