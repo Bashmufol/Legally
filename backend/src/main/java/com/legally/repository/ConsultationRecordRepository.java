@@ -9,9 +9,14 @@ import java.util.UUID;
 
 public interface ConsultationRecordRepository extends JpaRepository<ConsultationRecord, UUID> {
 
-    List<ConsultationRecord> findTop7ByFirebaseUidOrderByCreatedAtDesc(String firebaseUid);
+    List<ConsultationRecord> findTop7ByFirebaseUidAndSessionIdOrderByCreatedAtDesc(
+            String firebaseUid, UUID sessionId);
 
-    List<ConsultationRecord> findByFirebaseUidOrderByCreatedAtDesc(String firebaseUid);
+    List<ConsultationRecord> findByFirebaseUidAndSessionIdOrderByCreatedAtDesc(
+            String firebaseUid, UUID sessionId);
 
-    Optional<ConsultationRecord> findByIdAndFirebaseUid(UUID id, String firebaseUid);
+    Optional<ConsultationRecord> findByIdAndFirebaseUidAndSessionId(
+            UUID id, String firebaseUid, UUID sessionId);
+
+    void deleteBySessionId(UUID sessionId);
 }

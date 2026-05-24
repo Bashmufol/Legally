@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
 public interface DemandLetterRecordRepository extends JpaRepository<DemandLetterRecord, UUID> {
+
+    void deleteBySessionId(UUID sessionId);
 }

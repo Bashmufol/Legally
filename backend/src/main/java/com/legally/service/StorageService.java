@@ -7,6 +7,7 @@ import com.legally.config.LegallyProperties;
 import com.legally.entity.MediaUploadRecord;
 import com.legally.repository.MediaUploadRecordRepository;
 import com.legally.security.AuthContext;
+import com.legally.security.SessionContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -58,8 +59,29 @@ public class StorageService {
         if (AuthContext.GUEST_UID.equals(uid)) {
             return;
         }
+        UUID sessionId = SessionContext.current().orElse(null);
         mediaUploadRecordRepository.save(MediaUploadRecord.create(
-                uid, storagePath, publicUrl, mimeType, storageType, fileName));
+                uid, sessionId, storagePath, publicUrl, mimeType, storageType, fileName));
+    }
+
+    public void deleteStored(String storagePath, String storageType) throws IOException {
+        if (storagePath == null || storagePath.isBlank()) {
+            return;
+        }
+        if ("local".equals(storageType)) {
+            Path path = Path.of(properties.getUpload().getLocalDir()).resolve(storagePath);
+            Files.deleteIfExists(path);
+            return;
+        }
+        if ("firebase".equals(storageType)) {
+            if (!isFirebaseReady()) {
+                return;
+            }
+            Blob blob = StorageClient.getInstance().bucket().get(storagePath);
+            if (blob != null && blob.exists()) {
+                blob.delete();
+            }
+        }
     }
 
     public byte[] readLocal(String fileName) throws IOException {

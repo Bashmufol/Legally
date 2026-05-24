@@ -12,6 +12,7 @@ import type {
 } from '../types'
 import type { JurisdictionPayload } from '../lib/jurisdiction'
 import { parseApiErrorResponse, UserFacingError } from '../lib/errors'
+import { getSessionId, SESSION_HEADER } from '../lib/session'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -22,12 +23,22 @@ export function setAuthTokenProvider(provider: () => Promise<string | null>) {
 }
 
 async function authHeaders(): Promise<HeadersInit> {
-  const headers: Record<string, string> = {}
+  const headers: Record<string, string> = {
+    [SESSION_HEADER]: getSessionId(),
+  }
   if (tokenProvider) {
     const token = await tokenProvider()
     if (token) headers['Authorization'] = `Bearer ${token}`
   }
   return headers
+}
+
+export async function endSession(): Promise<void> {
+  const res = await apiFetch(`${API_URL}/api/session/end`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  })
+  await ensureOk(res)
 }
 
 async function apiFetch(input: string, init?: RequestInit): Promise<Response> {

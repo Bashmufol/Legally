@@ -1,6 +1,7 @@
 package com.legally.controller;
 
 import com.legally.model.dto.UploadResponse;
+import com.legally.service.SessionService;
 import com.legally.service.StorageService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -13,13 +14,16 @@ import org.springframework.web.multipart.MultipartFile;
 public class UploadController {
 
     private final StorageService storageService;
+    private final SessionService sessionService;
 
-    public UploadController(StorageService storageService) {
+    public UploadController(StorageService storageService, SessionService sessionService) {
         this.storageService = storageService;
+        this.sessionService = sessionService;
     }
 
     @PostMapping
     public ResponseEntity<UploadResponse> upload(@RequestParam("file") MultipartFile file) throws Exception {
+        sessionService.touchCurrentSession();
         StorageService.StoredFile stored = storageService.store(file);
         return ResponseEntity.ok(new UploadResponse(
                 stored.url(),

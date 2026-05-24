@@ -89,6 +89,24 @@ export default function AboutPage() {
           Signed-in sessions (anonymous, in the background) can revisit recent consultations from the Consult page.
         </p>
 
+        <h2 className="font-display text-xl text-legally-navy">Privacy and your uploads</h2>
+        <p>
+          We know legal questions often involve sensitive photos, voice notes, and documents. We do not
+          keep your uploads indefinitely.
+        </p>
+        <p>
+          Files you attach are stored only for as long as your current session is active. Each time you
+          use Legally, your session is extended for another 72 hours. If you do not come back within that
+          window, your uploaded files are permanently removed from our storage, along with the
+          consultation history tied to that session.
+        </p>
+        <p>
+          You can end a session at any time by choosing <strong>New session</strong> in the menu bar.
+          That clears your uploads and recent consultation history on our side straight away, and starts
+          you fresh with a new anonymous sign-in. We do not use your uploads to train models; they are
+          there only to help answer the question you asked.
+        </p>
+
         <h2 className="font-display text-xl text-legally-navy">How research works</h2>
         <p>
           For every jurisdiction, Legally searches official government and court websites via SerpApi,

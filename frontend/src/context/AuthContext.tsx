@@ -9,7 +9,8 @@ import {
 } from 'react'
 import { onAuthStateChanged, signOut, type User } from 'firebase/auth'
 import { getFirebaseAuth, isFirebaseConfigured, signInAnonymousUser } from '../lib/firebase'
-import { setAuthTokenProvider } from '../api/client'
+import { endSession, setAuthTokenProvider } from '../api/client'
+import { renewSessionId } from '../lib/session'
 
 interface AuthContextValue {
   user: User | null
@@ -64,7 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOutUser = useCallback(async () => {
     const firebaseAuth = getFirebaseAuth()
     if (!firebaseAuth) return
+    try {
+      await endSession()
+    } catch {
+      /* purge best-effort before new anonymous user */
+    }
     await signOut(firebaseAuth)
+    renewSessionId()
+    await signInAnonymousUser()
   }, [])
 
   const value = useMemo(

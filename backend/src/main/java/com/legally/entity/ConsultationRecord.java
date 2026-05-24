@@ -18,6 +18,9 @@ public class ConsultationRecord {
     @Column(name = "firebase_uid", nullable = false, length = 128)
     private String firebaseUid;
 
+    @Column(name = "session_id")
+    private UUID sessionId;
+
     @Column(nullable = false, length = 64)
     private String scenario;
 
@@ -41,6 +44,7 @@ public class ConsultationRecord {
 
     public static ConsultationRecord create(
             String firebaseUid,
+            UUID sessionId,
             String scenario,
             String userMessage,
             String summary,
@@ -48,6 +52,7 @@ public class ConsultationRecord {
             String responseJson) {
         ConsultationRecord r = new ConsultationRecord();
         r.firebaseUid = firebaseUid;
+        r.sessionId = sessionId;
         r.scenario = scenario;
         r.userMessage = userMessage;
         r.summary = summary;

@@ -7,7 +7,10 @@ import com.legally.model.dto.LegalDocumentRequest;
 import com.legally.model.dto.LegalDocumentResponse;
 import com.legally.repository.DemandLetterRecordRepository;
 import com.legally.security.AuthContext;
+import com.legally.security.SessionContext;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
@@ -47,8 +50,10 @@ public class DemandLetterService {
         if (AuthContext.GUEST_UID.equals(uid)) {
             return;
         }
+        UUID sessionId = SessionContext.current().orElse(null);
         demandLetterRecordRepository.save(DemandLetterRecord.create(
                 uid,
+                sessionId,
                 request.getScenario(),
                 request.getFacts(),
                 letter));

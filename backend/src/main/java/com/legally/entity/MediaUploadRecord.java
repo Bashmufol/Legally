@@ -16,6 +16,9 @@ public class MediaUploadRecord {
     @Column(name = "firebase_uid", nullable = false, length = 128)
     private String firebaseUid;
 
+    @Column(name = "session_id")
+    private UUID sessionId;
+
     @Column(name = "storage_path", nullable = false)
     private String storagePath;
 
@@ -39,6 +42,7 @@ public class MediaUploadRecord {
 
     public static MediaUploadRecord create(
             String firebaseUid,
+            UUID sessionId,
             String storagePath,
             String publicUrl,
             String mimeType,
@@ -46,6 +50,7 @@ public class MediaUploadRecord {
             String fileName) {
         MediaUploadRecord r = new MediaUploadRecord();
         r.firebaseUid = firebaseUid;
+        r.sessionId = sessionId;
         r.storagePath = storagePath;
         r.publicUrl = publicUrl;
         r.mimeType = mimeType;
@@ -56,5 +61,17 @@ public class MediaUploadRecord {
 
     public UUID getId() {
         return id;
+    }
+
+    public UUID getSessionId() {
+        return sessionId;
+    }
+
+    public String getStoragePath() {
+        return storagePath;
+    }
+
+    public String getStorageType() {
+        return storageType;
     }
 }

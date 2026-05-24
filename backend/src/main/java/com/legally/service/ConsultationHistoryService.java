@@ -8,6 +8,7 @@ import com.legally.model.dto.HistoryDetailDto;
 import com.legally.model.dto.HistoryItemDto;
 import com.legally.repository.ConsultationRecordRepository;
 import com.legally.security.AuthContext;
+import com.legally.security.SessionContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,14 +25,17 @@ public class ConsultationHistoryService {
     private final ConsultationRecordRepository consultationRecordRepository;
     private final UserQuestionService userQuestionService;
     private final ObjectMapper objectMapper;
+    private final SessionService sessionService;
 
     public ConsultationHistoryService(
             ConsultationRecordRepository consultationRecordRepository,
             UserQuestionService userQuestionService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            SessionService sessionService) {
         this.consultationRecordRepository = consultationRecordRepository;
         this.userQuestionService = userQuestionService;
         this.objectMapper = objectMapper;
+        this.sessionService = sessionService;
     }
 
     @Transactional
@@ -41,17 +45,19 @@ public class ConsultationHistoryService {
             return;
         }
 
+        UUID sessionId = sessionService.touchCurrentSession();
         String question = userQuestionService.resolveDisplayQuestion(request);
 
         consultationRecordRepository.save(ConsultationRecord.create(
                 uid,
+                sessionId,
                 request.getScenario() != null ? request.getScenario() : "general",
                 question,
                 response.getSummary(),
                 response.getConfidence(),
                 responseJson));
 
-        trimToMaxRecords(uid);
+        trimToMaxRecords(uid, sessionId);
     }
 
     @Transactional(readOnly = true)
@@ -60,9 +66,13 @@ public class ConsultationHistoryService {
         if (AuthContext.GUEST_UID.equals(uid)) {
             return List.of();
         }
-        return consultationRecordRepository.findTop7ByFirebaseUidOrderByCreatedAtDesc(uid).stream()
-                .map(this::toListDto)
-                .toList();
+        return SessionContext.current()
+                .map(sessionId -> consultationRecordRepository
+                        .findTop7ByFirebaseUidAndSessionIdOrderByCreatedAtDesc(uid, sessionId)
+                        .stream()
+                        .map(this::toListDto)
+                        .toList())
+                .orElse(List.of());
     }
 
     @Transactional(readOnly = true)
@@ -71,8 +81,9 @@ public class ConsultationHistoryService {
         if (AuthContext.GUEST_UID.equals(uid)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Consultation not found");
         }
+        UUID sessionId = SessionContext.require();
         ConsultationRecord record = consultationRecordRepository
-                .findByIdAndFirebaseUid(id, uid)
+                .findByIdAndFirebaseUidAndSessionId(id, uid, sessionId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Consultation not found"));
 
         try {
@@ -89,9 +100,10 @@ public class ConsultationHistoryService {
         }
     }
 
-    private void trimToMaxRecords(String firebaseUid) {
+    private void trimToMaxRecords(String firebaseUid, UUID sessionId) {
         List<ConsultationRecord> records =
-                consultationRecordRepository.findByFirebaseUidOrderByCreatedAtDesc(firebaseUid);
+                consultationRecordRepository.findByFirebaseUidAndSessionIdOrderByCreatedAtDesc(
+                        firebaseUid, sessionId);
         if (records.size() <= MAX_RECORDS_PER_SESSION) {
             return;
         }

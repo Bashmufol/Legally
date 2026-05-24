@@ -84,6 +84,12 @@ $env:FIREBASE_REQUIRE_AUTH="false"
 
 Uploads are stored under `backend/uploads/`. Consultation history is not persisted for guest mode.
 
+## Session and data retention
+
+- Each browser tab stores a **session ID** (`X-Legally-Session-Id`) sent with uploads and consultations.
+- **New session** (header button) deletes that session’s uploads (Firebase or local disk), consultation history, and demand letters, then starts a fresh anonymous Firebase user and session ID.
+- A scheduled job runs hourly and purges sessions with no activity for **72 hours** (configurable via `SESSION_TTL_HOURS`).
+
 ## Security
 
 - The web app signs users in anonymously in the background—no login form.

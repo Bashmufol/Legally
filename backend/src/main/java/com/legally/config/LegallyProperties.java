@@ -11,6 +11,7 @@ public class LegallyProperties {
     private Cors cors = new Cors();
     private Upload upload = new Upload();
     private SerpApi serpApi = new SerpApi();
+    private Session session = new Session();
 
     public Gemini getGemini() {
         return gemini;
@@ -58,6 +59,35 @@ public class LegallyProperties {
 
     public void setSerpApi(SerpApi serpApi) {
         this.serpApi = serpApi;
+    }
+
+    public Session getSession() {
+        return session;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
+    }
+
+    public static class Session {
+        private int ttlHours = 72;
+        private String cleanupCron = "0 0 * * * *";
+
+        public int getTtlHours() {
+            return ttlHours;
+        }
+
+        public void setTtlHours(int ttlHours) {
+            this.ttlHours = ttlHours;
+        }
+
+        public String getCleanupCron() {
+            return cleanupCron;
+        }
+
+        public void setCleanupCron(String cleanupCron) {
+            this.cleanupCron = cleanupCron;
+        }
     }
 
     public static class Gemini {

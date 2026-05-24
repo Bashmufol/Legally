@@ -124,7 +124,7 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
                 )}
                 {Object.keys(c.social || {}).length > 0 && (
                   <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs">
-                    {Object.entries(c.social).map(([platform, value]) => (
+                    {Object.entries(c.social ?? {}).map(([platform, value]) => (
                       <a
                         key={platform}
                         href={socialHref(platform, value)}

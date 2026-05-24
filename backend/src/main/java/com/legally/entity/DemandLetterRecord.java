@@ -16,6 +16,9 @@ public class DemandLetterRecord {
     @Column(name = "firebase_uid", nullable = false, length = 128)
     private String firebaseUid;
 
+    @Column(name = "session_id")
+    private UUID sessionId;
+
     @Column(length = 64)
     private String scenario;
 
@@ -31,9 +34,11 @@ public class DemandLetterRecord {
     protected DemandLetterRecord() {
     }
 
-    public static DemandLetterRecord create(String firebaseUid, String scenario, String facts, String letterText) {
+    public static DemandLetterRecord create(
+            String firebaseUid, UUID sessionId, String scenario, String facts, String letterText) {
         DemandLetterRecord r = new DemandLetterRecord();
         r.firebaseUid = firebaseUid;
+        r.sessionId = sessionId;
         r.scenario = scenario;
         r.facts = facts;
         r.letterText = letterText;

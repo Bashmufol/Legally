@@ -23,6 +23,7 @@ public class ConsultService {
     private final JurisdictionService jurisdictionService;
     private final ContactResearchService contactResearchService;
     private final ConsultationHistoryService consultationHistoryService;
+    private final SessionService sessionService;
     private final UserService userService;
     private final ObjectMapper objectMapper;
 
@@ -32,6 +33,7 @@ public class ConsultService {
             JurisdictionService jurisdictionService,
             ContactResearchService contactResearchService,
             ConsultationHistoryService consultationHistoryService,
+            SessionService sessionService,
             UserService userService,
             ObjectMapper objectMapper) {
         this.legalResearchOrchestrator = legalResearchOrchestrator;
@@ -39,12 +41,14 @@ public class ConsultService {
         this.jurisdictionService = jurisdictionService;
         this.contactResearchService = contactResearchService;
         this.consultationHistoryService = consultationHistoryService;
+        this.sessionService = sessionService;
         this.userService = userService;
         this.objectMapper = objectMapper;
     }
 
     public ConsultResponse consult(ConsultRequest request) throws Exception {
         userService.syncCurrentUser();
+        sessionService.touchCurrentSession();
 
         validateConsultInput(request);
         String messageText = normalizedMessage(request);
