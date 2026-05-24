@@ -10,6 +10,7 @@ public class LegallyProperties {
     private Database database = new Database();
     private Cors cors = new Cors();
     private Upload upload = new Upload();
+    private SerpApi serpApi = new SerpApi();
 
     public Gemini getGemini() {
         return gemini;
@@ -49,6 +50,14 @@ public class LegallyProperties {
 
     public void setUpload(Upload upload) {
         this.upload = upload;
+    }
+
+    public SerpApi getSerpApi() {
+        return serpApi;
+    }
+
+    public void setSerpApi(SerpApi serpApi) {
+        this.serpApi = serpApi;
     }
 
     public static class Gemini {
@@ -184,6 +193,58 @@ public class LegallyProperties {
 
         public void setLocalDir(String localDir) {
             this.localDir = localDir;
+        }
+    }
+
+    public static class SerpApi {
+        private boolean enabled = true;
+        private String apiKey = "";
+        private int maxResults = 8;
+        private int maxPagesToFetch = 3;
+        private int maxExcerptChars = 6000;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getApiKey() {
+            return apiKey;
+        }
+
+        public void setApiKey(String apiKey) {
+            this.apiKey = apiKey;
+        }
+
+        public int getMaxResults() {
+            return maxResults;
+        }
+
+        public void setMaxResults(int maxResults) {
+            this.maxResults = maxResults;
+        }
+
+        public int getMaxPagesToFetch() {
+            return maxPagesToFetch;
+        }
+
+        public void setMaxPagesToFetch(int maxPagesToFetch) {
+            this.maxPagesToFetch = maxPagesToFetch;
+        }
+
+        public int getMaxExcerptChars() {
+            return maxExcerptChars;
+        }
+
+        public void setMaxExcerptChars(int maxExcerptChars) {
+            this.maxExcerptChars = maxExcerptChars;
+        }
+
+        public boolean isConfigured() {
+            return enabled && apiKey != null && !apiKey.isBlank();
         }
     }
 }

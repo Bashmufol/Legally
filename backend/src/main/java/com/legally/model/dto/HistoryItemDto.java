@@ -4,9 +4,8 @@ public class HistoryItemDto {
 
     private String id;
     private String scenario;
-    private String message;
-    private String summary;
-    private String confidence;
+    /** User's question (typed or extracted from voice/uploads). */
+    private String question;
     private String createdAt;
 
     public String getId() {
@@ -25,28 +24,12 @@ public class HistoryItemDto {
         this.scenario = scenario;
     }
 
-    public String getMessage() {
-        return message;
+    public String getQuestion() {
+        return question;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getSummary() {
-        return summary;
-    }
-
-    public void setSummary(String summary) {
-        this.summary = summary;
-    }
-
-    public String getConfidence() {
-        return confidence;
-    }
-
-    public void setConfidence(String confidence) {
-        this.confidence = confidence;
+    public void setQuestion(String question) {
+        this.question = question;
     }
 
     public String getCreatedAt() {

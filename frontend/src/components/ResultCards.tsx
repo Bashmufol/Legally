@@ -142,7 +142,9 @@ export default function ResultCards({ result }: { result: ConsultResponse }) {
             onClick={() => setSourcesOpen(!sourcesOpen)}
             className="w-full flex items-center justify-between px-4 py-3 text-sm font-semibold"
           >
-            Sources from Legally corpus
+            {result.sources.some((s) => s.id?.startsWith('web'))
+              ? 'Official web sources'
+              : 'Sources from Legally corpus'}
             <ChevronDown
               className={`w-4 h-4 transition ${sourcesOpen ? 'rotate-180' : ''}`}
             />

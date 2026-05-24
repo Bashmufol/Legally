@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { History, Loader2, Send } from 'lucide-react'
-import { consult, fetchConsultationHistory } from '../api/client'
+import { Loader2, Send } from 'lucide-react'
+import { consult } from '../api/client'
 import { useAuth } from '../context/AuthContext'
-import type { HistoryItem } from '../types'
+import ConsultHistorySection from '../components/ConsultHistorySection'
 import UploadZone from '../components/UploadZone'
 import VoiceRecorder from '../components/VoiceRecorder'
 import AttachedMediaList from '../components/AttachedMediaList'
@@ -29,7 +29,6 @@ export default function ConsultPage() {
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<ConsultResponse | null>(null)
   const [letterOpen, setLetterOpen] = useState(false)
-  const [history, setHistory] = useState<HistoryItem[]>([])
   const { user, configured, loading: authLoading, signInGuest } = useAuth()
   const { jurisdiction } = useJurisdiction()
   const helpers = getConsultHelpers(scenario)
@@ -41,13 +40,6 @@ export default function ConsultPage() {
       )
     }
   }, [configured, user, authLoading, signInGuest])
-
-  useEffect(() => {
-    if (!user) return
-    fetchConsultationHistory()
-      .then(setHistory)
-      .catch(() => setHistory([]))
-  }, [user, result])
 
   const addMedia = (m: MediaRef) => setMedia((prev) => [...prev, m])
   const removeMedia = (index: number) => setMedia((prev) => prev.filter((_, i) => i !== index))
@@ -129,7 +121,7 @@ export default function ConsultPage() {
             {loading ? (
               <>
                 <Loader2 className="w-5 h-5 animate-spin" />
-                Analyzing with Gemini…
+                Analyzing your situation…
               </>
             ) : (
               <>
@@ -167,26 +159,7 @@ export default function ConsultPage() {
         </div>
       </div>
 
-      {user && history.length > 0 && (
-        <section className="mt-12">
-          <h2 className="font-display text-xl mb-4 flex items-center gap-2">
-            <History className="w-5 h-5 text-legally-gold" />
-            Your recent consultations
-          </h2>
-          <ul className="space-y-3">
-            {history.slice(0, 5).map((h) => (
-              <li
-                key={h.id}
-                className="rounded-lg bg-white border border-legally-navy/10 p-4 text-sm"
-              >
-                <p className="font-medium capitalize">{h.scenario.replace('_', ' ')}</p>
-                <p className="text-legally-navy/70 mt-1 line-clamp-2">{h.summary}</p>
-                <p className="text-xs text-legally-navy/40 mt-2">{h.createdAt}</p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      {user && <ConsultHistorySection refreshKey={result} />}
 
       <DemandLetterModal
         facts={demandLetterFacts}

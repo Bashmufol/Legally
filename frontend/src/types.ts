@@ -120,8 +120,14 @@ export interface LegalDocumentResponse {
 export interface HistoryItem {
   id: string
   scenario: string
-  message: string
-  summary: string
-  confidence: string
+  question: string
   createdAt: string
+}
+
+export interface HistoryDetail {
+  id: string
+  scenario: string
+  question: string
+  createdAt: string
+  response: ConsultResponse
 }

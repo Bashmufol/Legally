@@ -1,6 +1,7 @@
 import type {
   ConsultResponse,
   DemandLetterResponse,
+  HistoryDetail,
   HistoryItem,
   JurisdictionFields,
   LegalDocumentRequest,
@@ -127,6 +128,14 @@ export async function generateDemandLetter(
 
 export async function fetchConsultationHistory(): Promise<HistoryItem[]> {
   const res = await apiFetch(`${API_URL}/api/history/consultations`, {
+    headers: await authHeaders(),
+  })
+  await ensureOk(res)
+  return res.json()
+}
+
+export async function fetchConsultationHistoryDetail(id: string): Promise<HistoryDetail> {
+  const res = await apiFetch(`${API_URL}/api/history/consultations/${id}`, {
     headers: await authHeaders(),
   })
   await ensureOk(res)

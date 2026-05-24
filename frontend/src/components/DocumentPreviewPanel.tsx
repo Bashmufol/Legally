@@ -12,7 +12,7 @@ export default function DocumentPreviewPanel({ document, loading, onRegenerate }
   if (loading) {
     return (
       <div className="rounded-xl border border-dashed border-legally-navy/20 bg-white/50 p-12 text-center text-sm text-legally-navy/50">
-        Drafting your document with Gemini…
+        Drafting your document…
       </div>
     )
   }

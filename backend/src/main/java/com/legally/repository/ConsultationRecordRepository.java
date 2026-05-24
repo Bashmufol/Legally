@@ -4,9 +4,14 @@ import com.legally.entity.ConsultationRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ConsultationRecordRepository extends JpaRepository<ConsultationRecord, UUID> {
 
-    List<ConsultationRecord> findTop20ByFirebaseUidOrderByCreatedAtDesc(String firebaseUid);
+    List<ConsultationRecord> findTop7ByFirebaseUidOrderByCreatedAtDesc(String firebaseUid);
+
+    List<ConsultationRecord> findByFirebaseUidOrderByCreatedAtDesc(String firebaseUid);
+
+    Optional<ConsultationRecord> findByIdAndFirebaseUid(UUID id, String firebaseUid);
 }

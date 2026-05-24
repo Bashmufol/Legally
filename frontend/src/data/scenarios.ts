@@ -81,6 +81,12 @@ export const SCENARIO_LABELS: { id: Scenario; label: string }[] = [
   { id: 'general', label: 'General' },
 ]
 
+export function scenarioLabel(scenario: string): string {
+  const found = SCENARIO_LABELS.find((s) => s.id === scenario)
+  if (found) return found.label
+  return scenario.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export interface ScenarioConsultHelpers {
   shortTitle: string
   intro: string
