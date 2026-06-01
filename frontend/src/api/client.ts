@@ -1,0 +1,156 @@
+import type {
+  ConsultResponse,
+  DemandLetterResponse,
+  HistoryDetail,
+  HistoryItem,
+  JurisdictionFields,
+  LegalDocumentRequest,
+  LegalDocumentResponse,
+  MediaRef,
+  Scenario,
+  UploadResponse,
+} from '../types'
+import { jurisdictionForApi, type JurisdictionPayload } from '../lib/jurisdiction'
+import { parseApiErrorResponse, UserFacingError } from '../lib/errors'
+import { getSessionId, SESSION_HEADER } from '../lib/session'
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+
+let tokenProvider: (() => Promise<string | null>) | null = null
+
+export function setAuthTokenProvider(provider: () => Promise<string | null>) {
+  tokenProvider = provider
+}
+
+async function authHeaders(): Promise<HeadersInit> {
+  const headers: Record<string, string> = {
+    [SESSION_HEADER]: getSessionId(),
+  }
+  if (tokenProvider) {
+    const token = await tokenProvider()
+    if (token) headers['Authorization'] = `Bearer ${token}`
+  }
+  return headers
+}
+
+export async function endSession(): Promise<void> {
+  const res = await apiFetch(`${API_URL}/api/session/end`, {
+    method: 'POST',
+    headers: await authHeaders(),
+  })
+  await ensureOk(res)
+}
+
+async function apiFetch(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch {
+    throw new UserFacingError(
+      "We couldn't reach Legally right now. Check your internet connection and try again.",
+    )
+  }
+}
+
+async function ensureOk(res: Response): Promise<void> {
+  if (!res.ok) {
+    throw new UserFacingError(await parseApiErrorResponse(res))
+  }
+}
+
+export async function consult(
+  message: string,
+  scenario: Scenario,
+  media: MediaRef[] = [],
+  jurisdiction?: JurisdictionPayload,
+): Promise<ConsultResponse> {
+  const body: Record<string, unknown> = {
+    message,
+    scenario: scenario === 'general' ? null : scenario,
+    media,
+  }
+  const deviceJurisdiction = jurisdiction ? jurisdictionForApi(jurisdiction) : undefined
+  if (deviceJurisdiction) {
+    body.countryCode = deviceJurisdiction.countryCode
+    body.countryName = deviceJurisdiction.countryName
+    body.regionCode = deviceJurisdiction.regionCode
+    body.regionName = deviceJurisdiction.regionName
+    body.locationSource = deviceJurisdiction.locationSource
+  }
+  const res = await apiFetch(`${API_URL}/api/consult`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify(body),
+  })
+  await ensureOk(res)
+  return res.json()
+}
+
+export async function uploadFile(file: File): Promise<UploadResponse> {
+  const form = new FormData()
+  form.append('file', file)
+  const res = await apiFetch(`${API_URL}/api/uploads`, {
+    method: 'POST',
+    headers: await authHeaders(),
+    body: form,
+  })
+  await ensureOk(res)
+  const data: UploadResponse = await res.json()
+  if (data.storageType === 'local' && data.url.startsWith('/')) {
+    return { ...data, url: `${API_URL}${data.url}` }
+  }
+  return data
+}
+
+export async function generateLegalDocument(
+  request: LegalDocumentRequest,
+  jurisdiction?: JurisdictionPayload,
+): Promise<LegalDocumentResponse> {
+  const body: Record<string, unknown> = { ...request }
+  const deviceJurisdiction = jurisdiction ? jurisdictionForApi(jurisdiction) : undefined
+  if (deviceJurisdiction) {
+    body.countryCode = deviceJurisdiction.countryCode
+    body.countryName = deviceJurisdiction.countryName
+    body.regionCode = deviceJurisdiction.regionCode
+    body.regionName = deviceJurisdiction.regionName
+    body.locationSource = deviceJurisdiction.locationSource
+  }
+  const res = await apiFetch(`${API_URL}/api/documents/generate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify(body),
+  })
+  await ensureOk(res)
+  return res.json()
+}
+
+export async function generateDemandLetter(
+  facts: string,
+  scenario = 'tenancy',
+  senderName?: string,
+  recipientName?: string,
+  jurisdiction?: JurisdictionFields,
+): Promise<DemandLetterResponse> {
+  const res = await apiFetch(`${API_URL}/api/demand-letter`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
+    body: JSON.stringify({ facts, scenario, senderName, recipientName, ...jurisdiction }),
+  })
+  await ensureOk(res)
+  return res.json()
+}
+
+export async function fetchConsultationHistory(): Promise<HistoryItem[]> {
+  const res = await apiFetch(`${API_URL}/api/history/consultations`, {
+    headers: await authHeaders(),
+  })
+  await ensureOk(res)
+  return res.json()
+}
+
+export async function fetchConsultationHistoryDetail(id: string): Promise<HistoryDetail> {
+  const res = await apiFetch(`${API_URL}/api/history/consultations/${id}`, {
+    headers: await authHeaders(),
+  })
+  await ensureOk(res)
+  return res.json()
+}

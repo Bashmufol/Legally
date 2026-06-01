@@ -1,0 +1,16 @@
+package com.legally.repository;
+
+import com.legally.entity.UserSession;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface UserSessionRepository extends JpaRepository<UserSession, UUID> {
+
+    Optional<UserSession> findByIdAndFirebaseUid(UUID sessionId, String firebaseUid);
+
+    List<UserSession> findByLastActivityAtBefore(Instant cutoff);
+}
