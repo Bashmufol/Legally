@@ -1,101 +1,128 @@
-# Legally
+# Legally Backend API
 
-Legally is an AI-powered legal information platform that helps people understand their rights, see what the law says, and take practical next steps—without needing a law degree or an expensive lawyer on call.
+Legally is a REST API that helps people understand everyday legal questions in plain language. It is not a substitute for a licensed lawyer. Clients send a scenario by text, voice, or uploaded files, and the API returns structured guidance: a summary, legal points with source links where possible, practical steps, and contacts for relevant organisations when those details appear on official sources.
 
-Users can consult via text, voice, images, PDFs, or video. The system detects jurisdiction from device location and honors explicit country or state mentions in text or uploads. Legal answers are produced by a **multi-LLM fallback chain** (Gemini first, with optional Groq, OpenRouter, Mistral, Cloudflare, and Hugging Face). **Gemini** can ground research with **Google Search** on official government and court sources. If no provider returns citable material, users see a clear “no information” message with practical suggestions—not invented law. **Contact cards** use the same provider chain: NGOs, government bodies, and related organizations, with phone, email, or social handles only when published on the cited official page. Users can also draft agreements and formal letters for their jurisdiction, preview them, and download PDFs.
+The service resolves jurisdiction from device location and from explicit place names in the user's message or uploads. Legal research runs through a configurable multi-provider AI chain (Gemini first, with optional Groq, OpenRouter, Mistral, Cloudflare, and Hugging Face). Gemini can ground answers with Google Search on government and court sites. If no provider returns usable material, the API responds with a clear no-information message instead of invented law. Contact research uses the same failover pattern.
 
 ## Features
 
-- **Legal consultations** — scenario-based guidance (police interactions, tenancy, land, employment, and more)
-- **Multimodal input** — text, voice recordings, documents, and video evidence
-- **Global jurisdiction** — automatic location detection with input-based override
-- **Official web citations** — each point tied to source URLs where available
-- **Multi-LLM fallback** — configurable order via `LLM_PROVIDER_ORDER`; automatic failover on quota or errors
-- **Live AI contacts** — Gemini + Google Search first; other providers as fallbacks when configured
-- **Document drafting** — rent agreements, land contracts, NDAs, demand letters, and other templates
-- **Session privacy** — uploads and history expire after 72 hours of inactivity, or instantly on “New session”
+- **Legal consultations** via `POST /api/consult` (tenancy, land, employment, police encounters, and more)
+- **Multimodal input** through file uploads plus speech-to-text for audio attachments
+- **Jurisdiction resolution** from request fields, message text, and optional Gemini detection
+- **Multi-LLM failover** controlled by `LLM_PROVIDER_ORDER`
+- **Contact cards** with phone, email, or social handles only when tied to cited official pages
+- **Document drafting** for agreements, letters, and demand letters
+- **Session-scoped data** with TTL-based cleanup and an explicit end-session endpoint
 
-## Architecture
+## Tech stack
 
-| Layer | Technology |
-|-------|------------|
-| API | Java 21, Spring Boot 4 |
-| Database | PostgreSQL (local Docker or **Cloud SQL**) |
-| Authentication | **Firebase** Anonymous Auth |
-| File storage | **Firebase Storage** (local filesystem when Firebase is disabled) |
-| AI | **Gemini API** + optional OpenAI-compatible providers (Groq, OpenRouter, Mistral, Cloudflare Workers AI, Hugging Face) |
-| Web research | **Gemini Google Search** grounding (no separate search API) |
-| Web app | React, TypeScript, Tailwind CSS, Vite |
-| Production API | **Cloud Run** (recommended) |
+| Area | Technology |
+|------|------------|
+| Runtime | Java 21, Spring Boot 4 |
+| API | Spring Web, Validation, Actuator |
+| Security | Spring Security, Firebase Admin SDK |
+| Persistence | Spring Data JPA, PostgreSQL |
+| Cloud database | Cloud SQL (PostgreSQL socket factory) |
+| File storage | Firebase Storage (local disk when Firebase is disabled) |
+| AI | Gemini API, Google Speech-to-Text, optional OpenAI-compatible providers |
+| Build and deploy | Maven, Docker, Cloud Run |
 
-### Consultation flow
+## API overview
 
-1. **Resolve jurisdiction** — device geolocation, explicit place in the user’s message, or Gemini detection from media when applicable.
-2. **Legal analysis** — try each provider in `LLM_PROVIDER_ORDER` until one returns substantive, cited content. Gemini uses the `google_search` tool for live official sources.
-3. **No information** — if every provider fails or returns nothing citable, return a short message and practical next steps (no fabricated statutes).
-4. **Contacts** — same provider chain; Gemini searches the web first; other providers use structured JSON from model knowledge when configured.
-5. **Persist** — consultation saved per Firebase user and session (when auth and database are enabled).
+All routes under `/api/**` expect a Firebase ID token in `Authorization: Bearer <token>` when Firebase auth is enabled. Clients should also send `X-Legally-Session-Id` (a UUID) on uploads and consultations so history and files stay scoped to one session.
 
-## Google technologies
+| Method | Path | Purpose |
+|--------|------|---------|
+| `POST` | `/api/consult` | Run legal research and return a structured response |
+| `POST` | `/api/uploads` | Upload photos, PDFs, audio, or video |
+| `GET` | `/api/uploads/files/{fileName}` | Serve local uploads (dev only when Firebase is off) |
+| `GET` | `/api/history/consultations` | List consultations for the current user and session |
+| `GET` | `/api/history/consultations/{id}` | Fetch one consultation record |
+| `POST` | `/api/session/end` | End session and delete its uploads and history |
+| `POST` | `/api/documents/generate` | Generate a legal document draft |
+| `POST` | `/api/demand-letter` | Generate a demand letter |
+| `GET` | `/actuator/health` | Health check (public) |
 
-| Product | Role in Legally |
-|---------|-----------------|
-| **Gemini API** | Legal research, contacts, document drafting, jurisdiction hints, no-info fallbacks |
-| **Firebase** | Anonymous sign-in, ID token verification, file storage for uploads |
-| **Cloud SQL** | Production PostgreSQL (consultations, sessions, upload metadata) |
-| **Cloud Run** | Host the Spring Boot API with secure Cloud SQL connectivity |
+Public routes also include `OPTIONS` and `/actuator/info`. Configure allowed browser origins with `CORS_ALLOWED_ORIGINS` when a separate web client hosts the UI.
+
+## How a consult works
+
+1. **Jurisdiction** is resolved from device fields, parsed place names, or Gemini when needed. If jurisdiction is still unknown, the API returns a dedicated response and does not run legal research.
+2. **Media** is transcribed (audio) or summarised (images, PDF, video) before or during provider calls.
+3. **Legal research** tries each configured provider in order until one returns substantive, citable content. Gemini uses native multimodal input and the `google_search` tool.
+4. **Contacts** run on a separate provider chain when the legal result calls for them.
+5. **Persistence** saves the consultation to PostgreSQL when auth and the database are enabled.
+
+## Google Cloud and Firebase
+
+| Product | Role |
+|---------|------|
+| **Gemini API** | Legal research, contacts, media digest, jurisdiction hints |
+| **Google Speech-to-Text** | Audio transcription |
+| **Firebase Auth** | Anonymous (or configured) user tokens verified on the API |
+| **Firebase Storage** | Production file uploads |
+| **Cloud SQL** | PostgreSQL for users, sessions, consultations, upload metadata |
+| **Cloud Run** | Recommended host for the containerised API |
 
 ## Prerequisites
 
-- Java 21 and Maven
-- Node.js 18+
+- Java 21 and Maven 3.9+
 - Docker (for local PostgreSQL)
-- A [Firebase](https://console.firebase.google.com/) project with Anonymous Auth and Storage enabled (optional for local dev)
-- A [Gemini API](https://ai.google.dev/) key (**required** for multimodal consults and Google Search grounding)
-- Optional fallback providers: [Groq](https://console.groq.com/), [OpenRouter](https://openrouter.ai/), [Mistral](https://console.mistral.ai/), [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/), [Hugging Face](https://huggingface.co/settings/tokens)
+- A [Gemini API](https://ai.google.dev/) key (required for multimodal consults and search grounding)
+- A [Firebase](https://console.firebase.google.com/) project with Auth and Storage (optional for local dev without Firebase)
+- Optional fallback keys: [Groq](https://console.groq.com/), [OpenRouter](https://openrouter.ai/), [Mistral](https://console.mistral.ai/), [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/), [Hugging Face](https://huggingface.co/settings/tokens)
 
 ## Local development
 
-### 1. Database
+### 1. Start PostgreSQL
+
+From the repository root:
 
 ```bash
 docker compose up -d postgres
 ```
 
-Set in `backend/.env`:
+Default connection: `jdbc:postgresql://localhost:5432/legally`, user `legally`, password `legally`.
+
+### 2. Configure environment
+
+Create `backend/.env` with at least:
 
 ```env
 DATABASE_MODE=local
 DATABASE_URL=jdbc:postgresql://localhost:5432/legally
-DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=your_password
+DATABASE_USERNAME=legally
+DATABASE_PASSWORD=legally
+
+GEMINI_API_KEY=your_gemini_key
+
+# Optional: comma-separated provider order (only configured providers are used)
+LLM_PROVIDER_ORDER=gemini,groq,openrouter
+
+# CORS for your web client origin(s)
+CORS_ALLOWED_ORIGINS=http://localhost:5173
 ```
 
-### 2. Backend
+Add Firebase settings when auth and cloud storage are enabled:
 
-Copy environment variables into `backend/.env` (see Configuration below). Then:
+```env
+FIREBASE_ENABLED=true
+FIREBASE_REQUIRE_AUTH=true
+FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_STORAGE_BUCKET=your-project-id.appspot.com
+FIREBASE_CREDENTIALS_PATH=firebase-service-account.json
+```
 
-```powershell
+Place the Firebase Admin SDK JSON at `backend/firebase-service-account.json` (or the path set in `FIREBASE_CREDENTIALS_PATH`).
+
+### 3. Run the API
+
+```bash
 cd backend
 mvn spring-boot:run
 ```
 
-The API listens on `http://localhost:8080`.
-
-On startup, logs show `LLM_PROVIDER_ORDER` and which providers are in the active fallback chain.
-
-### 3. Frontend
-
-```bash
-cd frontend
-cp .env.example .env
-npm install
-npm run dev
-```
-
-Open `http://localhost:5173`.
-
-Place your Firebase Admin SDK JSON at `backend/firebase-service-account.json` and add the web app config to `frontend/.env` when using Firebase.
+The server listens on `http://localhost:8080` by default. Startup logs list `LLM_PROVIDER_ORDER` and which providers joined the active chain.
 
 ### Development without Firebase
 
@@ -108,22 +135,51 @@ Uploads are stored under `backend/uploads/`. Consultation history is not persist
 
 ## Session and data retention
 
-- Each browser tab stores a **session ID** (`X-Legally-Session-Id`) sent with uploads and consultations.
-- **New session** (header button) deletes that session’s uploads (Firebase or local disk), consultation history, and demand letters, then starts a fresh anonymous Firebase user and session ID.
-- A scheduled job runs hourly and purges sessions with no activity for **72 hours** (configurable via `SESSION_TTL_HOURS`).
+- Clients send `X-Legally-Session-Id` with uploads and consults.
+- `POST /api/session/end` deletes that session's uploads (Firebase or local disk), consultation history, and demand letters.
+- A scheduled job purges inactive sessions after **72 hours** by default (`SESSION_TTL_HOURS`).
 
 ## Security
 
-- The web app signs users in anonymously in the background—no login form.
-- API requests carry a Firebase ID token when Firebase is enabled; the backend verifies it with the Admin SDK.
-- Data is scoped to the authenticated user in PostgreSQL.
+- When Firebase is enabled, the API verifies `Authorization: Bearer <Firebase ID token>` with the Admin SDK.
+- Data in PostgreSQL is scoped to the authenticated Firebase user and session.
+- API keys and database credentials belong in environment variables or `.env`, not in source control.
 
 ## Production deployment
 
-- **Backend:** Build with `backend/Dockerfile` and deploy to **Cloud Run**. Use `SPRING_PROFILES_ACTIVE=cloudsql` (or `legally.database.mode=cloud-sql`) with `CLOUD_SQL_INSTANCE_CONNECTION_NAME` and service account credentials.
-- **Database:** **Cloud SQL for PostgreSQL** (often provisioned via Firebase SQL Connect in the Firebase console).
-- **Frontend:** `npm run build` and deploy to Vercel, Firebase Hosting, or static hosting. Set `VITE_API_URL` to your API origin and add the frontend URL to `CORS_ALLOWED_ORIGINS`.
+1. Build the image from `backend/Dockerfile`.
+2. Deploy to **Cloud Run** and set environment variables (or Secret Manager references).
+3. Use `SPRING_PROFILES_ACTIVE=cloudsql` with `CLOUD_SQL_INSTANCE_CONNECTION_NAME`, `DATABASE_URL`, and service account credentials for Cloud SQL.
+4. Set `CORS_ALLOWED_ORIGINS` to the origin(s) of the web client that calls this API.
+5. Point the client at the Cloud Run service URL for all `/api` requests.
+
+Example build:
+
+```bash
+cd backend
+docker build -t legally-api .
+```
+
+## Project layout
+
+```
+backend/
+  src/main/java/com/legally/
+    controller/     REST endpoints
+    service/        Application logic (consult, jurisdiction, storage, sessions)
+    llm/            Provider integrations and orchestration
+    entity/         JPA entities
+    security/       Firebase auth and session filters
+  src/main/resources/
+    application.properties
+  Dockerfile
+docker-compose.yml   Local PostgreSQL
+```
 
 ## Disclaimer
 
-Legally provides general legal information only. It is not a substitute for advice from a licensed lawyer in your jurisdiction. Always verify contact details, citations, and critical steps with qualified counsel.
+Legally provides general legal information only. It is not legal advice. Users should verify citations, contact details, and important steps with a qualified lawyer in their jurisdiction.
+
+## License
+
+See repository license file if present.
