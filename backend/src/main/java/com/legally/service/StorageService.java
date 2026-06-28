@@ -17,6 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
+/**
+ * Stores uploads in Firebase Storage or local disk and tracks metadata per session.
+ */
 @Service
 public class StorageService {
 
@@ -28,6 +31,7 @@ public class StorageService {
         this.mediaUploadRecordRepository = mediaUploadRecordRepository;
     }
 
+    /** Saves the file and returns a URL the client can reference in consult requests. */
     @Transactional
     public StoredFile store(MultipartFile file) throws IOException {
         String original = file.getOriginalFilename() != null ? file.getOriginalFilename() : "upload";
@@ -64,6 +68,7 @@ public class StorageService {
                 uid, sessionId, storagePath, publicUrl, mimeType, storageType, fileName));
     }
 
+    /** Removes a stored object when a session is purged. */
     public void deleteStored(String storagePath, String storageType) throws IOException {
         if (storagePath == null || storagePath.isBlank()) {
             return;
@@ -84,6 +89,7 @@ public class StorageService {
         }
     }
 
+    /** Reads a file from the local uploads directory (development mode). */
     public byte[] readLocal(String fileName) throws IOException {
         Path path = Path.of(properties.getUpload().getLocalDir()).resolve(fileName);
         if (!Files.exists(path)) {
@@ -92,6 +98,7 @@ public class StorageService {
         return Files.readAllBytes(path);
     }
 
+    /** Reads file bytes from local disk or Firebase using the client media reference. */
     public byte[] readBytes(String url, String storageType) throws IOException {
         if ("local".equals(storageType) && url != null && url.contains("/files/")) {
             int idx = url.indexOf("/files/");
@@ -122,5 +129,6 @@ public class StorageService {
         return properties.getFirebase().isEnabled() && !FirebaseApp.getApps().isEmpty();
     }
 
+    /** Result of a successful upload. */
     public record StoredFile(String url, String mimeType, String storageType, String fileName) {}
 }

@@ -16,6 +16,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Tries each configured legal LLM provider in order until one returns substantive content.
+ */
 @Service
 public class MultiLlmLegalResearchService {
 
@@ -37,6 +40,7 @@ public class MultiLlmLegalResearchService {
         this.googleSpeechToTextService = googleSpeechToTextService;
     }
 
+    /** Runs legal research across configured LLM providers. */
     public LegalResearchResult research(
             String messageText,
             String scenario,

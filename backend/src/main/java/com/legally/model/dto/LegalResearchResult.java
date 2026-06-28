@@ -4,6 +4,9 @@ import com.legally.model.LawChunk;
 
 import java.util.List;
 
+/**
+ * legal research result.
+ */
 public class LegalResearchResult {
 
     private final GeminiLegalResponse response;

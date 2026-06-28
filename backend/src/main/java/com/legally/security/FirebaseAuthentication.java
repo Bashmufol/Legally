@@ -4,6 +4,9 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 
 import java.util.Collections;
 
+/**
+ * Spring Security token holding the Firebase UID after token verification.
+ */
 public class FirebaseAuthentication extends AbstractAuthenticationToken {
 
     private final String uid;

@@ -21,6 +21,9 @@ import org.springframework.web.client.RestClientResponseException;
 import java.util.*;
 
 @Service
+/**
+ * Gemini API calls for jurisdiction detection, fallbacks, and media helpers.
+ */
 public class GeminiService {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
@@ -60,6 +63,7 @@ public class GeminiService {
         return r;
     }
 
+    /** build jurisdiction unresolved response. */
     public GeminiLegalResponse buildJurisdictionUnresolvedResponse() {
         GeminiLegalResponse r = new GeminiLegalResponse();
         r.setSummary(
@@ -81,6 +85,7 @@ public class GeminiService {
         return r;
     }
 
+    /** build media processing failed response. */
     public GeminiLegalResponse buildMediaProcessingFailedResponse(JurisdictionContext jurisdiction) {
         String area = jurisdiction != null && jurisdiction.displayLabel() != null
                 ? jurisdiction.displayLabel()
@@ -305,6 +310,7 @@ public class GeminiService {
         }
     }
 
+    /** detect jurisdiction from inputs. */
     public Optional<JurisdictionContext> detectJurisdictionFromInputs(
             String userMessage,
             List<ConsultRequest.MediaRef> media,

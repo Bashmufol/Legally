@@ -8,6 +8,9 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Builds Gemini multimodal parts from stored uploads.
+ */
 final class LlmMediaAttachment {
 
     private LlmMediaAttachment() {

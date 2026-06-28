@@ -46,6 +46,7 @@ public class LegalMediaDigestService {
         return key != null && !key.isBlank();
     }
 
+    /** build digest. */
     public Optional<String> buildDigest(
             String userMessage,
             String scenario,

@@ -13,11 +13,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.UUID;
 
+/**
+ * Reads {@link SessionContext#HEADER_NAME} and binds it for the duration of the request.
+ */
 @Component
 @Order(Ordered.LOWEST_PRECEDENCE)
 public class SessionHeaderFilter extends OncePerRequestFilter {
 
     @Override
+    /** should not filter. */
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
@@ -27,6 +31,7 @@ public class SessionHeaderFilter extends OncePerRequestFilter {
     }
 
     @Override
+    /** do filter internal. */
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -37,7 +42,7 @@ public class SessionHeaderFilter extends OncePerRequestFilter {
                 try {
                     SessionContext.set(UUID.fromString(raw.trim()));
                 } catch (IllegalArgumentException ignored) {
-                    // ignore invalid session header
+                    // Invalid UUID in header; proceed without a session id.
                 }
             }
             filterChain.doFilter(request, response);

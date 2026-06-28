@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @Service
+/**
+ * Transcribes audio attachments using Google Speech-to-Text.
+ */
 public class GoogleSpeechToTextService {
 
     private static final Logger log = LoggerFactory.getLogger(GoogleSpeechToTextService.class);
@@ -45,6 +48,7 @@ public class GoogleSpeechToTextService {
         this.properties = properties;
     }
 
+    /** transcribe audio. */
     public Optional<String> transcribeAudio(List<ConsultRequest.MediaRef> media) {
         if (media == null || media.isEmpty()) {
             return Optional.empty();

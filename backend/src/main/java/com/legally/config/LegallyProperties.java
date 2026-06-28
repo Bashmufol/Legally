@@ -3,6 +3,9 @@ package com.legally.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "legally")
+/**
+ * Typed configuration bound from environment variables.
+ */
 public class LegallyProperties {
 
     private Gemini gemini = new Gemini();
@@ -335,6 +338,7 @@ public class LegallyProperties {
             this.accountId = accountId;
         }
 
+        /** True when API key and model are present. */
         public boolean isConfigured() {
             return apiKey != null && !apiKey.isBlank() && model != null && !model.isBlank();
         }

@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Session lifecycle (start is client-driven; end wipes session data).
+ */
 @RestController
 @RequestMapping("/api/session")
 public class SessionController {
@@ -18,9 +21,7 @@ public class SessionController {
         this.sessionService = sessionService;
     }
 
-  /**
-   * Ends the current session: deletes uploads, consultation history, and demand letters for this session.
-   */
+    /** Deletes uploads, consultation history, and demand letters for the current session. */
     @PostMapping("/end")
     public ResponseEntity<Map<String, String>> endSession() {
         sessionService.endCurrentSession();

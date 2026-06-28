@@ -10,6 +10,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Tries each configured contact LLM provider in order until validated contacts are returned.
+ */
 @Service
 public class MultiLlmContactResearchService {
 
@@ -22,6 +25,7 @@ public class MultiLlmContactResearchService {
         this.providers = providers;
     }
 
+    /** Runs contact research across configured LLM providers. */
     public List<ContactCard> findContacts(
             JurisdictionContext jurisdiction,
             String scenario,

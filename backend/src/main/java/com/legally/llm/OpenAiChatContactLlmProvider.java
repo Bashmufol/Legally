@@ -1,33 +1,20 @@
 package com.legally.llm;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legally.model.ContactCard;
 import com.legally.model.JurisdictionContext;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
-import java.util.List;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
- * OpenAI-compatible chat API for contact discovery (no live web search).
+ * OpenAI-compatible chat API for contact discovery (no live web search on fallback providers).
  */
-public class OpenAiChatContactLlmProvider implements ContactLlmProvider {
-
-    private static final Logger log = LoggerFactory.getLogger(OpenAiChatContactLlmProvider.class);
-
-    private final String providerId;
-    private final String baseUrl;
-    private final String apiKey;
-    private final String model;
-    private final Map<String, String> extraHeaders;
-    private final RestClient restClient;
-    private final ObjectMapper objectMapper;
+public class OpenAiChatContactLlmProvider extends AbstractOpenAiChatProvider implements ContactLlmProvider {
 
     public OpenAiChatContactLlmProvider(
             String providerId,
@@ -37,37 +24,38 @@ public class OpenAiChatContactLlmProvider implements ContactLlmProvider {
             Map<String, String> extraHeaders,
             RestClient restClient,
             ObjectMapper objectMapper) {
-        this.providerId = providerId;
-        this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        this.apiKey = apiKey;
-        this.model = model;
-        this.extraHeaders = extraHeaders != null ? extraHeaders : Map.of();
-        this.restClient = restClient;
-        this.objectMapper = objectMapper;
+        super(
+                providerId,
+                baseUrl,
+                apiKey,
+                model,
+                extraHeaders,
+                restClient,
+                objectMapper,
+                LoggerFactory.getLogger(OpenAiChatContactLlmProvider.class));
     }
 
     @Override
+    /** Provider identifier matching LLM_PROVIDER_ORDER entries. */
     public String id() {
         return providerId;
     }
 
     @Override
+    /** True when API key and model are present. */
     public boolean isConfigured() {
-        return apiKey != null && !apiKey.isBlank() && model != null && !model.isBlank();
+        return isApiConfigured();
     }
 
     @Override
+    /** Runs contact research across configured LLM providers. */
     public Optional<List<ContactCard>> findContacts(
             JurisdictionContext jurisdiction,
             String scenario,
             String userMessage,
             List<String> suggestedTags,
             String legalSummary) {
-        if (!isConfigured()) {
-            return Optional.empty();
-        }
-        if (isOpenRouter() && OpenRouterRateLimitCircuitBreaker.isOpen()) {
-            log.info("OpenRouter contact research skipped: rate-limit circuit breaker open for this request");
+        if (!isConfigured() || shouldSkipOpenRouter()) {
             return Optional.empty();
         }
 
@@ -84,20 +72,10 @@ public class OpenAiChatContactLlmProvider implements ContactLlmProvider {
                             "content", ContactResearchPrompts.userMessage(
                                     userMessage, scenario, jurisdiction, suggestedTags, legalSummary))));
             if (usesStructuredResponseFormat()) {
-                body.put("response_format", responseFormatForProvider());
+                body.put("response_format", responseFormatForProvider("contact_response"));
             }
 
-            RestClient.RequestBodySpec spec = restClient.post()
-                    .uri(baseUrl + "/chat/completions")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .header("Authorization", "Bearer " + apiKey);
-            for (Map.Entry<String, String> h : extraHeaders.entrySet()) {
-                spec = spec.header(h.getKey(), h.getValue());
-            }
-
-            String responseBody = spec.body(body).retrieve().body(String.class);
-            JsonNode root = objectMapper.readTree(responseBody);
-            String text = root.path("choices").path(0).path("message").path("content").asText("");
+            String text = extractAssistantText(postChatCompletion(body));
             if (text.isBlank()) {
                 return Optional.empty();
             }
@@ -110,31 +88,11 @@ public class OpenAiChatContactLlmProvider implements ContactLlmProvider {
             return Optional.of(contacts);
         } catch (Exception e) {
             if (isOpenRouter() && LlmHttpErrors.isRateLimited(e)) {
-                OpenRouterRateLimitCircuitBreaker.open();
-                log.warn("OpenRouter contact research skipped (rate limited); trying next provider");
+                handleOpenRouterRateLimit("contact research");
             } else {
                 log.warn("{} contact research failed: {}", providerId, e.getMessage());
             }
             return Optional.empty();
         }
-    }
-
-    private boolean isOpenRouter() {
-        return "openrouter".equalsIgnoreCase(providerId);
-    }
-
-    private boolean usesStructuredResponseFormat() {
-        return !isOpenRouter();
-    }
-
-    private Map<String, Object> responseFormatForProvider() {
-        if ("cloudflare".equalsIgnoreCase(providerId)) {
-            return Map.of(
-                    "type", "json_schema",
-                    "json_schema", Map.of(
-                            "name", "contact_response",
-                            "schema", Map.of("type", "object")));
-        }
-        return Map.of("type", "json_object");
     }
 }

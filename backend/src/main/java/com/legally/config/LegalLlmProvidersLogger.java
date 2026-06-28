@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+/**
+ * Logs which LLM providers loaded at startup.
+ */
 public class LegalLlmProvidersLogger {
 
     private static final Logger log = LoggerFactory.getLogger(LegalLlmProvidersLogger.class);

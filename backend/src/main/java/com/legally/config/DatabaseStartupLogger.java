@@ -8,6 +8,9 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
+/**
+ * Logs database connection mode at startup.
+ */
 public class DatabaseStartupLogger {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseStartupLogger.class);
@@ -21,6 +24,7 @@ public class DatabaseStartupLogger {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    /** log database mode. */
     public void logDatabaseMode() {
         String mode = properties.getDatabase().getMode();
         switch (mode.toLowerCase()) {

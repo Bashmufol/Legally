@@ -17,6 +17,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Verifies Firebase ID tokens on API requests when Firebase auth is enabled.
+ */
 @Component
 public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
 
@@ -27,6 +30,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    /** should not filter. */
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
@@ -42,6 +46,7 @@ public class FirebaseAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
+    /** do filter internal. */
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,

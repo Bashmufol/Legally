@@ -5,6 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Hourly job that purges sessions past {@code SESSION_TTL_HOURS}.
+ */
 @Component
 public class SessionCleanupScheduler {
 
@@ -16,6 +19,7 @@ public class SessionCleanupScheduler {
         this.sessionService = sessionService;
     }
 
+    /** Scheduled entry point for expired session cleanup. */
     @Scheduled(cron = "${legally.session.cleanup-cron:0 0 * * * *}")
     public void purgeExpiredSessions() {
         try {

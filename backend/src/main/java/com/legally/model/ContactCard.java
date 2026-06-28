@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+/**
+ * One organisation contact returned to the client.
+ */
 public class ContactCard {
 
     private String id;

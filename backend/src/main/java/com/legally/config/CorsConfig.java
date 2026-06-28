@@ -10,6 +10,9 @@ import java.util.Arrays;
 import java.util.List;
 
 @Configuration
+/**
+ * CORS settings for browser clients calling the API.
+ */
 public class CorsConfig {
 
     private final LegallyProperties properties;
@@ -19,6 +22,7 @@ public class CorsConfig {
     }
 
     @Bean
+    /** cors filter. */
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);

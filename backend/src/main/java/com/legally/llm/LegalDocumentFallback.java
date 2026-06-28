@@ -5,11 +5,15 @@ import com.legally.model.LegalDocumentType;
 
 import java.util.Locale;
 
+/**
+ * Static template when document generation fails.
+ */
 public final class LegalDocumentFallback {
 
     private LegalDocumentFallback() {
     }
 
+    /** Generates content for the request. */
     public static String generate(LegalDocumentDraftRequest request) {
         LegalDocumentType documentType = request.documentType();
         String title = request.title();

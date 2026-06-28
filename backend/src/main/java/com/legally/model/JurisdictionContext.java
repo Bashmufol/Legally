@@ -5,6 +5,9 @@ package com.legally.model;
  */
 public class JurisdictionContext {
 
+    /**
+     * location source.
+     */
     public enum LocationSource {
         device,
         input_override,
@@ -85,6 +88,7 @@ public class JurisdictionContext {
         this.corpusLimited = corpusLimited;
     }
 
+    /** display label. */
     public String displayLabel() {
         if (countryName == null || countryName.isBlank()) {
             return "";

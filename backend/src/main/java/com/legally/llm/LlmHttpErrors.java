@@ -1,5 +1,8 @@
 package com.legally.llm;
 
+/**
+ * Detects quota and rate-limit errors from HTTP client exceptions.
+ */
 public final class LlmHttpErrors {
 
     private LlmHttpErrors() {

@@ -21,6 +21,9 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Session lifecycle, TTL purge, and deletion of session-scoped uploads and history.
+ */
 @Service
 public class SessionService {
 
@@ -48,9 +51,7 @@ public class SessionService {
         this.storageService = storageService;
     }
 
-  /**
-   * Registers or refreshes the current session from {@link SessionContext}.
-   */
+    /** Registers or refreshes the current session from {@link SessionContext}. */
     @Transactional
     public UUID touchCurrentSession() {
         if (AuthContext.GUEST_UID.equals(AuthContext.currentUserId())) {
@@ -61,6 +62,7 @@ public class SessionService {
         return sessionId;
     }
 
+    /** Updates last activity or creates a new session row for this user. */
     @Transactional
     public void touchSession(UUID sessionId) {
         String uid = AuthContext.currentUserId();
@@ -81,6 +83,7 @@ public class SessionService {
         userSessionRepository.save(UserSession.create(sessionId, uid));
     }
 
+    /** Wipes all data for the current session and removes the session row. */
     @Transactional
     public void endCurrentSession() {
         if (AuthContext.GUEST_UID.equals(AuthContext.currentUserId())) {
@@ -97,6 +100,7 @@ public class SessionService {
         log.info("Ended session {} for user {}", sessionId, uid);
     }
 
+    /** Deletes sessions inactive longer than {@code SESSION_TTL_HOURS}. Returns count purged. */
     @Transactional
     public int purgeExpiredSessions() {
         int ttlHours = properties.getSession().getTtlHours();
@@ -113,6 +117,7 @@ public class SessionService {
         return count;
     }
 
+    /** Deletes uploads, consultations, demand letters, and the session record. */
     @Transactional
     public void purgeSession(UUID sessionId) {
         List<MediaUploadRecord> uploads = mediaUploadRecordRepository.findBySessionId(sessionId);

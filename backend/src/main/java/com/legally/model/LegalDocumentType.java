@@ -2,6 +2,9 @@ package com.legally.model;
 
 import java.util.Locale;
 
+/**
+ * Supported legal document templates.
+ */
 public enum LegalDocumentType {
     DEMAND_LETTER("Demand Letter"),
     RENT_AGREEMENT("Residential Rent / Lease Agreement"),
@@ -24,6 +27,7 @@ public enum LegalDocumentType {
         return displayName;
     }
 
+    /** from api value. */
     public static LegalDocumentType fromApiValue(String raw) {
         if (raw == null || raw.isBlank()) {
             return OTHER;
@@ -36,6 +40,7 @@ public enum LegalDocumentType {
         }
     }
 
+    /** research scenario. */
     public String researchScenario() {
         return switch (this) {
             case DEMAND_LETTER, RENT_AGREEMENT -> "tenancy";

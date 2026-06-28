@@ -1,3 +1,6 @@
+# Local PostgreSQL for backend development.
+# Credentials match the defaults documented in README.md.
+
 services:
   postgres:
     image: postgres:16-alpine

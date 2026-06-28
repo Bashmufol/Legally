@@ -6,6 +6,9 @@ import com.legally.security.AuthContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Ensures an {@link AppUser} row exists for the current Firebase UID.
+ */
 @Service
 public class UserService {
 
@@ -15,6 +18,7 @@ public class UserService {
         this.appUserRepository = appUserRepository;
     }
 
+    /** Creates or updates lastSeenAt for the authenticated user. Skips guest mode. */
     @Transactional
     public void syncCurrentUser() {
         String uid = AuthContext.currentUserId();

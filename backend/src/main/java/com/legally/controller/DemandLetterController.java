@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Demand letter generation endpoint.
+ */
 @RestController
 @RequestMapping("/api/demand-letter")
 public class DemandLetterController {
@@ -17,8 +20,10 @@ public class DemandLetterController {
         this.demandLetterService = demandLetterService;
     }
 
+    /** Generates a demand letter from the supplied facts and scenario. */
     @PostMapping
-    public ResponseEntity<DemandLetterResponse> generate(@Valid @RequestBody DemandLetterRequest request) throws Exception {
+    public ResponseEntity<DemandLetterResponse> generate(@Valid @RequestBody DemandLetterRequest request)
+            throws Exception {
         return ResponseEntity.ok(demandLetterService.generate(request));
     }
 }

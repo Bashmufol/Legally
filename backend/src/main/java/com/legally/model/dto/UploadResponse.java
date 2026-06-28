@@ -1,5 +1,8 @@
 package com.legally.model.dto;
 
+/**
+ * API response payload.
+ */
 public class UploadResponse {
 
     private String url;

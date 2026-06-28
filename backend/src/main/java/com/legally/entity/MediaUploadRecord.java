@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Metadata for a file uploaded during a session.
+ */
 @Entity
 @Table(name = "media_uploads")
 public class MediaUploadRecord {
@@ -19,15 +22,18 @@ public class MediaUploadRecord {
     @Column(name = "session_id")
     private UUID sessionId;
 
+    /** Internal path (Firebase or local disk). */
     @Column(name = "storage_path", nullable = false)
     private String storagePath;
 
+    /** URL returned to the client for consult references. */
     @Column(name = "public_url", nullable = false, columnDefinition = "TEXT")
     private String publicUrl;
 
     @Column(name = "mime_type", nullable = false)
     private String mimeType;
 
+    /** {@code firebase} or {@code local}. */
     @Column(name = "storage_type", nullable = false, length = 32)
     private String storageType;
 
@@ -40,6 +46,7 @@ public class MediaUploadRecord {
     protected MediaUploadRecord() {
     }
 
+    /** Factory for a new upload metadata row. */
     public static MediaUploadRecord create(
             String firebaseUid,
             UUID sessionId,

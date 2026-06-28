@@ -2,6 +2,9 @@ package com.legally.model.dto;
 
 import jakarta.validation.constraints.NotBlank;
 
+/**
+ * API request payload.
+ */
 public class DemandLetterRequest {
 
     @NotBlank

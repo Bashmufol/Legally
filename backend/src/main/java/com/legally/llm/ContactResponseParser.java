@@ -8,6 +8,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * Parses and validates contact JSON from LLM text output.
+ */
 public final class ContactResponseParser {
 
     private static final int MAX_CONTACTS = 10;
@@ -17,6 +20,7 @@ public final class ContactResponseParser {
     private ContactResponseParser() {
     }
 
+    /** parse contacts. */
     public static List<ContactCard> parseContacts(ObjectMapper objectMapper, String rawText) throws Exception {
         String text = rawText.replace("```json", "").replace("```", "").trim();
         int start = text.indexOf('{');

@@ -5,11 +5,15 @@ import com.legally.model.JurisdictionContext;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Prompt text for contact research.
+ */
 public final class ContactResearchPrompts {
 
     private ContactResearchPrompts() {
     }
 
+    /** system instruction with web search. */
     public static String systemInstructionWithWebSearch(JurisdictionContext jurisdiction) {
         return """
                 You are Legally's contact research assistant. Find REAL organizations and officials who can help with the user's legal situation.
@@ -84,6 +88,7 @@ public final class ContactResearchPrompts {
                 jurisdiction.getRegionName());
     }
 
+    /** user message. */
     public static String userMessage(
             String userMessage,
             String scenario,
@@ -117,6 +122,7 @@ public final class ContactResearchPrompts {
                 summaryBlock);
     }
 
+    /** json reformat user message. */
     public static String jsonReformatUserMessage(String researchText, JurisdictionContext jurisdiction) {
         return """
                 Convert the contact research below into ONLY valid JSON matching the schema in the system instruction.

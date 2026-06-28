@@ -10,6 +10,9 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+/**
+ * Generates legal documents through the legal LLM provider chain.
+ */
 public class MultiLlmDocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(MultiLlmDocumentService.class);
@@ -20,6 +23,7 @@ public class MultiLlmDocumentService {
         this.providers = providers;
     }
 
+    /** Generates content for the request. */
     public String generate(LegalDocumentDraftRequest request) {
         for (LegalLlmProvider provider : providers) {
             if (!provider.isConfigured()) {

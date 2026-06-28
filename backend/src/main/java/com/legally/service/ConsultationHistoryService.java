@@ -17,9 +17,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Persists and lists consultation history for the current user and session.
+ */
 @Service
 public class ConsultationHistoryService {
 
+    /** Maximum consultations kept per session in the database. */
     public static final int MAX_RECORDS_PER_SESSION = 7;
 
     private final ConsultationRecordRepository consultationRecordRepository;
@@ -38,6 +42,7 @@ public class ConsultationHistoryService {
         this.sessionService = sessionService;
     }
 
+    /** Saves one consult and trims older rows beyond {@link #MAX_RECORDS_PER_SESSION}. */
     @Transactional
     public void save(ConsultRequest request, ConsultResponse response, String responseJson) throws Exception {
         String uid = AuthContext.currentUserId();
@@ -56,6 +61,7 @@ public class ConsultationHistoryService {
         trimToMaxRecords(uid, sessionId);
     }
 
+    /** Returns up to seven recent consultations for the current session. */
     @Transactional(readOnly = true)
     public List<HistoryItemDto> listForCurrentUser() {
         String uid = AuthContext.currentUserId();
@@ -68,6 +74,7 @@ public class ConsultationHistoryService {
                 .orElse(List.of());
     }
 
+    /** Loads the full stored response for one consultation id. */
     @Transactional(readOnly = true)
     public HistoryDetailDto getDetailForCurrentUser(UUID id) {
         String uid = AuthContext.currentUserId();

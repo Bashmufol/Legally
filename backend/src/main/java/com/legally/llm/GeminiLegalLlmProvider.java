@@ -1,8 +1,6 @@
 package com.legally.llm;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.legally.config.LegallyProperties;
 import com.legally.model.JurisdictionContext;
 import com.legally.model.LawChunk;
 import com.legally.model.dto.ConsultRequest;
@@ -10,48 +8,50 @@ import com.legally.model.dto.GeminiLegalResponse;
 import com.legally.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.MediaType;
-import org.springframework.web.client.RestClient;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
+/**
+ * Gemini provider for legal analysis with native multimodal input and Google Search grounding.
+ */
 public class GeminiLegalLlmProvider implements LegalLlmProvider {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiLegalLlmProvider.class);
 
-    private final LegallyProperties properties;
-    private final RestClient restClient;
-    private final ObjectMapper objectMapper;
+    private final GeminiApiClient geminiApiClient;
     private final StorageService storageService;
+    private final ObjectMapper objectMapper;
 
     public GeminiLegalLlmProvider(
-            LegallyProperties properties,
-            RestClient restClient,
-            ObjectMapper objectMapper,
-            StorageService storageService) {
-        this.properties = properties;
-        this.restClient = restClient;
-        this.objectMapper = objectMapper;
+            GeminiApiClient geminiApiClient, StorageService storageService, ObjectMapper objectMapper) {
+        this.geminiApiClient = geminiApiClient;
         this.storageService = storageService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
+    /** Provider identifier matching LLM_PROVIDER_ORDER entries. */
     public String id() {
         return "gemini";
     }
 
     @Override
+    /** True when API key and model are present. */
     public boolean isConfigured() {
-        String key = properties.getGemini().getApiKey();
-        return key != null && !key.isBlank();
+        return geminiApiClient.isConfigured();
     }
 
     @Override
+    /** True when raw media bytes can be sent to this provider. */
     public boolean supportsNativeMultimodal() {
         return true;
     }
 
     @Override
+    /** Calls the provider for legal analysis. */
     public Optional<LlmAnalysisOutcome> analyze(
             String userMessage,
             String scenario,
@@ -70,7 +70,7 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
             if (!LlmResponseParser.hasSubstantiveLegalContent(parsed)) {
                 return Optional.empty();
             }
-            List<LawChunk> sources = LlmResponseParser.sourcesFromCitations(parsed, jurisdiction, "gemini");
+            List<LawChunk> sources = LlmResponseParser.sourcesFromCitations(parsed, jurisdiction, id());
             return Optional.of(new LlmAnalysisOutcome(parsed, sources, id()));
         } catch (Exception e) {
             if (LlmHttpErrors.isQuotaExceeded(e)) {
@@ -84,20 +84,19 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
     }
 
     @Override
+    /** Drafts a legal document when this provider supports it. */
     public Optional<String> generateLegalDocument(LegalDocumentDraftRequest request) {
         if (!isConfigured()) {
             return Optional.empty();
         }
         try {
-            String apiKey = properties.getGemini().getApiKey();
             String prompt = LegalPrompts.legalDocumentPrompt(request);
             Map<String, Object> body = Map.of(
                     "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))),
                     "generationConfig", Map.of("temperature", 0.25));
 
-            String responseBody = callGemini(apiKey, body);
-            JsonNode root = objectMapper.readTree(responseBody);
-            String text = LegalPrompts.stripCodeFences(extractTextFromGeminiResponse(root));
+            String responseBody = geminiApiClient.generateContent(body);
+            String text = LegalPrompts.stripCodeFences(geminiApiClient.extractText(responseBody));
             if (text.isBlank()) {
                 return Optional.empty();
             }
@@ -114,7 +113,6 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
             JurisdictionContext jurisdiction,
             List<ConsultRequest.MediaRef> media) throws Exception {
 
-        String apiKey = properties.getGemini().getApiKey();
         String textPrompt = LegalPrompts.analyzeUserMessage(userMessage, scenario, jurisdiction)
                 + "\n\nSearch for official government and court sources for this jurisdiction. Cite sourceUrl for each point."
                 + "\n\nIMPORTANT: Your final answer must be ONLY the JSON object from the system instruction (no prose before or after).";
@@ -124,15 +122,14 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
         body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", LegalPrompts.analyzeSystemInstruction(jurisdiction)))));
         body.put("contents", List.of(Map.of("role", "user", "parts", parts)));
         body.put("tools", List.of(Map.of("google_search", Map.of())));
-        // Cannot combine google_search with responseMimeType application/json
         body.put("generationConfig", Map.of("temperature", 0.2));
 
-        String responseBody = callGemini(apiKey, body);
-        JsonNode root = objectMapper.readTree(responseBody);
-        String text = extractTextFromGeminiResponse(root);
+        String responseBody = geminiApiClient.generateContent(body);
+        String text = geminiApiClient.extractText(responseBody);
         if (text.isBlank()) {
             throw new IllegalStateException("Empty Gemini response");
         }
+
         GeminiLegalResponse parsed;
         try {
             parsed = LlmResponseParser.parseJsonResponse(objectMapper, text, jurisdiction);
@@ -140,7 +137,7 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
             log.debug("Gemini google_search returned non-JSON ({} chars), reformatting: {}",
                     text.length(), parseEx.getMessage());
             try {
-                text = callJsonReformat(apiKey, userMessage, scenario, jurisdiction, text);
+                text = callJsonReformat(userMessage, scenario, jurisdiction, text);
                 parsed = LlmResponseParser.parseJsonResponse(objectMapper, text, jurisdiction);
             } catch (Exception reformatEx) {
                 if (LlmHttpErrors.isQuotaExceeded(reformatEx)) {
@@ -157,11 +154,8 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
         return parsed;
     }
 
-    /**
-     * Second pass without google_search so we can force {@code application/json} mime type.
-     */
+    /** Second pass without google_search so responseMimeType application/json can be used. */
     private String callJsonReformat(
-            String apiKey,
             String userMessage,
             String scenario,
             JurisdictionContext jurisdiction,
@@ -179,38 +173,11 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
                 "temperature", 0.1,
                 "responseMimeType", "application/json"));
 
-        String responseBody = callGemini(apiKey, body);
-        JsonNode root = objectMapper.readTree(responseBody);
-        String text = extractTextFromGeminiResponse(root);
+        String responseBody = geminiApiClient.generateContent(body);
+        String text = geminiApiClient.extractText(responseBody);
         if (text.isBlank()) {
             throw new IllegalStateException("Empty Gemini JSON reformat response");
         }
         return text;
-    }
-
-    private String extractTextFromGeminiResponse(JsonNode root) {
-        StringBuilder sb = new StringBuilder();
-        for (JsonNode part : root.path("candidates").path(0).path("content").path("parts")) {
-            if (part.has("text")) {
-                sb.append(part.path("text").asText(""));
-            }
-        }
-        return sb.toString().trim();
-    }
-
-    private String callGemini(String apiKey, Map<String, Object> body) {
-        String model = properties.getGemini().getModel();
-        if (model == null || model.isBlank()) {
-            model = "gemini-2.5-flash";
-        }
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/"
-                + model + ":generateContent?key=" + apiKey;
-
-        return restClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(String.class);
     }
 }

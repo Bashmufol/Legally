@@ -17,6 +17,9 @@ import javax.sql.DataSource;
 @Configuration
 @ConditionalOnProperty(name = "legally.database.mode", havingValue = "cloud-sql")
 @EnableConfigurationProperties(DataSourceProperties.class)
+/**
+ * Cloud SQL PostgreSQL datasource for production.
+ */
 public class CloudSqlDataSourceConfig {
 
     private static final Logger log = LoggerFactory.getLogger(CloudSqlDataSourceConfig.class);
@@ -33,6 +36,7 @@ public class CloudSqlDataSourceConfig {
 
     @Bean
     @Primary
+    /** cloud sql data source. */
     public DataSource cloudSqlDataSource() {
         LegallyProperties.Database db = legallyProperties.getDatabase();
         String instance = db.getCloudSqlInstanceConnectionName();

@@ -3,18 +3,33 @@ package com.legally.model.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * POST /api/consult request body.
+ */
 public class ConsultRequest {
 
+    /** User's description of the legal situation. */
     private String message;
 
+    /** Scenario slug (tenancy, employment, etc.). */
     private String scenario;
+
+    /** Uploaded files referenced by URL from POST /api/uploads. */
     private List<MediaRef> media = new ArrayList<>();
 
+    /** ISO country code from device geolocation. */
     private String countryCode;
+
     private String countryName;
+
+    /** State or region code from device geolocation. */
     private String regionCode;
+
     private String regionName;
+
     private String locationSource;
+
+    /** When true, prefer message-based jurisdiction over device location. */
     private Boolean jurisdictionOverride;
 
     public String getMessage() {
@@ -89,9 +104,11 @@ public class ConsultRequest {
         this.jurisdictionOverride = jurisdictionOverride;
     }
 
+    /** Reference to a file already uploaded for this session. */
     public static class MediaRef {
         private String url;
         private String mimeType;
+        /** {@code firebase} or {@code local}. */
         private String storageType;
 
         public String getUrl() {

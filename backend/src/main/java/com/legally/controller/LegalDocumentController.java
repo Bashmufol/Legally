@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * AI-generated legal document drafts (agreements, letters, and similar).
+ */
 @RestController
 @RequestMapping("/api/documents")
 public class LegalDocumentController {
@@ -20,6 +23,7 @@ public class LegalDocumentController {
         this.legalDocumentService = legalDocumentService;
     }
 
+    /** Generates document text for the requested type and jurisdiction. */
     @PostMapping("/generate")
     public ResponseEntity<LegalDocumentResponse> generate(@Valid @RequestBody LegalDocumentRequest request)
             throws Exception {

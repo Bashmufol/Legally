@@ -1,5 +1,8 @@
 package com.legally.model.dto;
 
+/**
+ * API response payload.
+ */
 public class LegalDocumentResponse {
 
     private String documentType;

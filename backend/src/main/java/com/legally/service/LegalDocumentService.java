@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Generates legal document drafts through the multi-LLM document chain.
+ */
 @Service
 public class LegalDocumentService {
 
@@ -35,6 +38,7 @@ public class LegalDocumentService {
         this.userService = userService;
     }
 
+    /** Resolves jurisdiction, generates content, and applies party name placeholders. */
     public LegalDocumentResponse generate(LegalDocumentRequest request) throws Exception {
         userService.syncCurrentUser();
 

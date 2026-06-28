@@ -19,6 +19,9 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Maps exceptions to safe JSON error messages for API clients.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -30,6 +33,7 @@ public class GlobalExceptionHandler {
             "Our legal assistant is temporarily unavailable. Please try again shortly.";
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    /** handle validation. */
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         String msg = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
@@ -39,36 +43,42 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
+    /** handle missing param. */
     public ResponseEntity<Map<String, String>> handleMissingParam(MissingServletRequestParameterException ex) {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", "Some required information was missing. Please try again."));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
+    /** handle unreadable. */
     public ResponseEntity<Map<String, String>> handleUnreadable(HttpMessageNotReadableException ex) {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", "We couldn't read your request. Please refresh and try again."));
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    /** handle media type. */
     public ResponseEntity<Map<String, String>> handleMediaType(HttpMediaTypeNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                 .body(Map.of("error", "That file type is not supported. Try an image, PDF, audio, or video."));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
+    /** handle max upload. */
     public ResponseEntity<Map<String, String>> handleMaxUpload(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                 .body(Map.of("error", "That file is too large. Please use a file under 50 MB."));
     }
 
     @ExceptionHandler(MultipartException.class)
+    /** handle multipart. */
     public ResponseEntity<Map<String, String>> handleMultipart(MultipartException ex) {
         return ResponseEntity.badRequest()
                 .body(Map.of("error", "We couldn't upload that file. Please try again with a different file."));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
+    /** handle illegal argument. */
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
         String message = ex.getMessage();
         if (message != null && isSafeUserMessage(message)) {
@@ -79,6 +89,7 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(IOException.class)
+    /** handle io. */
     public ResponseEntity<Map<String, String>> handleIo(IOException ex) {
         log.warn("IO error: {}", ex.getMessage());
         if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("not found")) {
@@ -90,24 +101,28 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
+    /** handle access denied. */
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("error", "You don't have permission to do that. Try refreshing the page."));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    /** handle method not allowed. */
     public ResponseEntity<Map<String, String>> handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex) {
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
                 .body(Map.of("error", "That action is not supported."));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
+    /** handle not found. */
     public ResponseEntity<Map<String, String>> handleNotFound(NoResourceFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(Map.of("error", "We couldn't find what you were looking for."));
     }
 
     @ExceptionHandler(Exception.class)
+    /** handle generic. */
     public ResponseEntity<Map<String, String>> handleGeneric(Exception ex) {
         log.error("Unhandled error", ex);
         String friendly = mapKnownTechnicalMessage(ex);

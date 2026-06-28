@@ -10,9 +10,13 @@ import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 @Configuration
+/**
+ * Shared Spring beans (RestClient, ObjectMapper).
+ */
 public class AppConfig {
 
     @Bean
+    /** object mapper. */
     public ObjectMapper objectMapper(ObjectProvider<Jackson2ObjectMapperBuilder> builderProvider) {
         Jackson2ObjectMapperBuilder builder = builderProvider.getIfAvailable();
         if (builder != null) {
@@ -22,6 +26,7 @@ public class AppConfig {
     }
 
     @Bean
+    /** rest client. */
     public RestClient restClient() {
         var httpClient = HttpClients.custom().disableAutomaticRetries().build();
         var requestFactory = new HttpComponentsClientHttpRequestFactory(httpClient);

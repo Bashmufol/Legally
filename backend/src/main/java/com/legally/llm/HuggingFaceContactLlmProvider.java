@@ -5,6 +5,9 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+/**
+ * LLM provider implementation for hugging face contact.
+ */
 public class HuggingFaceContactLlmProvider extends OpenAiChatContactLlmProvider {
 
     public HuggingFaceContactLlmProvider(

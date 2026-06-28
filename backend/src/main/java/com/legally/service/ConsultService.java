@@ -6,20 +6,23 @@ import com.legally.model.LawChunk;
 import com.legally.model.dto.ConsultRequest;
 import com.legally.model.dto.ConsultResponse;
 import com.legally.model.dto.GeminiLegalResponse;
-import com.legally.model.dto.LegalResearchResult;
 import com.legally.llm.GoogleSpeechToTextService;
-import org.springframework.stereotype.Service;
-
+import com.legally.llm.MultiLlmLegalResearchService;
+import com.legally.model.dto.LegalResearchResult;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.springframework.stereotype.Service;
 
+/**
+ * Main consult workflow: jurisdiction, legal research, contacts, and history persistence.
+ */
 @Service
 public class ConsultService {
 
-    private final LegalResearchOrchestrator legalResearchOrchestrator;
+    private final MultiLlmLegalResearchService legalResearchService;
     private final GeminiService geminiService;
     private final JurisdictionService jurisdictionService;
     private final ContactResearchService contactResearchService;
@@ -30,7 +33,7 @@ public class ConsultService {
     private final ObjectMapper objectMapper;
 
     public ConsultService(
-            LegalResearchOrchestrator legalResearchOrchestrator,
+            MultiLlmLegalResearchService legalResearchService,
             GeminiService geminiService,
             JurisdictionService jurisdictionService,
             ContactResearchService contactResearchService,
@@ -39,7 +42,7 @@ public class ConsultService {
             SessionService sessionService,
             UserService userService,
             ObjectMapper objectMapper) {
-        this.legalResearchOrchestrator = legalResearchOrchestrator;
+        this.legalResearchService = legalResearchService;
         this.geminiService = geminiService;
         this.jurisdictionService = jurisdictionService;
         this.contactResearchService = contactResearchService;
@@ -50,6 +53,7 @@ public class ConsultService {
         this.objectMapper = objectMapper;
     }
 
+    /** Runs the full consult pipeline and returns the API response. */
     public ConsultResponse consult(ConsultRequest request) throws Exception {
         userService.syncCurrentUser();
         sessionService.touchCurrentSession();
@@ -75,7 +79,7 @@ public class ConsultService {
             return response;
         }
 
-        LegalResearchResult research = legalResearchOrchestrator.research(
+        LegalResearchResult research = legalResearchService.research(
                 messageText,
                 request.getScenario(),
                 jurisdiction,
@@ -97,6 +101,7 @@ public class ConsultService {
         return response;
     }
 
+    /** Maps AI output and metadata into the client response shape. */
     private ConsultResponse buildConsultResponse(
             ConsultRequest request,
             String messageText,
@@ -133,6 +138,7 @@ public class ConsultService {
         return response;
     }
 
+    /** Requires at least message text or one uploaded file. */
     private void validateConsultInput(ConsultRequest request) {
         boolean hasMessage = request.getMessage() != null && !request.getMessage().isBlank();
         boolean hasMedia = request.getMedia() != null && !request.getMedia().isEmpty();
@@ -149,6 +155,7 @@ public class ConsultService {
         return request.getMessage().trim();
     }
 
+    /** Appends a speech-to-text transcript when audio is attached. */
     private String enrichJurisdictionMessageWithVoice(
             String messageText, List<ConsultRequest.MediaRef> media) {
         String base = messageText != null ? messageText : "";
@@ -166,6 +173,7 @@ public class ConsultService {
         }
     }
 
+    /** Fills display fields when jurisdiction is unresolved. */
     private JurisdictionContext displayFallbackJurisdiction(
             JurisdictionContext resolved,
             ConsultRequest request) {
@@ -193,6 +201,7 @@ public class ConsultService {
         return fallback;
     }
 
+    /** Copies consult fields for jurisdiction parsing without mutating the original request. */
     private ConsultRequest copyForJurisdiction(ConsultRequest request, String messageText) {
         ConsultRequest copy = new ConsultRequest();
         copy.setMessage(messageText);
@@ -207,6 +216,7 @@ public class ConsultService {
         return copy;
     }
 
+    /** Copies source URLs from law chunks onto legal point citations. */
     private void enrichCitationSources(List<GeminiLegalResponse.LegalPoint> points, List<LawChunk> chunks) {
         Map<String, LawChunk> byId = new HashMap<>();
         for (LawChunk chunk : chunks) {
@@ -232,6 +242,7 @@ public class ConsultService {
         }
     }
 
+    /** Applies Gemini or text-based jurisdiction when the user names a different place. */
     private JurisdictionContext applyGeminiJurisdictionOverride(
             ConsultRequest request, JurisdictionContext jurisdiction) throws Exception {
         if (jurisdiction.getLocationSource() == com.legally.model.JurisdictionContext.LocationSource.input_override) {

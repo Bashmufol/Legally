@@ -7,6 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Legal consultation endpoint.
+ */
 @RestController
 @RequestMapping("/api")
 public class ConsultController {
@@ -17,6 +20,7 @@ public class ConsultController {
         this.consultService = consultService;
     }
 
+    /** Runs jurisdiction resolution, legal research, optional contacts, and saves history. */
     @PostMapping("/consult")
     public ResponseEntity<ConsultResponse> consult(@Valid @RequestBody ConsultRequest request) throws Exception {
         return ResponseEntity.ok(consultService.consult(request));

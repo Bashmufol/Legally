@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Persisted consult request and full JSON response for history.
+ */
 @Entity
 @Table(name = "consultations", indexes = {
         @Index(name = "idx_consultations_user_created", columnList = "firebase_uid, created_at")
@@ -21,6 +24,7 @@ public class ConsultationRecord {
     @Column(name = "session_id")
     private UUID sessionId;
 
+    /** Scenario slug from the client (e.g. tenancy, employment). */
     @Column(nullable = false, length = 64)
     private String scenario;
 
@@ -33,6 +37,7 @@ public class ConsultationRecord {
     @Column(length = 32)
     private String confidence;
 
+    /** Serialized {@code ConsultResponse} JSON. */
     @Column(name = "response_json", columnDefinition = "TEXT")
     private String responseJson;
 
@@ -42,6 +47,7 @@ public class ConsultationRecord {
     protected ConsultationRecord() {
     }
 
+    /** Factory for a new consultation history row. */
     public static ConsultationRecord create(
             String firebaseUid,
             UUID sessionId,

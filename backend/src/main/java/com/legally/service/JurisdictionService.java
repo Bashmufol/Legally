@@ -8,6 +8,9 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * Resolves country and region from device fields, message text, or Gemini detection.
+ */
 @Service
 public class JurisdictionService {
 
@@ -40,6 +43,7 @@ public class JurisdictionService {
             new CountryMention(Pattern.compile("\\bsouth africa\\b", Pattern.CASE_INSENSITIVE), "ZA", "South Africa")
     );
 
+    /** Determines jurisdiction from request fields and message text. */
     public JurisdictionContext resolve(ConsultRequest request) {
         String message = request.getMessage() != null ? request.getMessage() : "";
 
@@ -63,6 +67,7 @@ public class JurisdictionService {
         return defaultContext();
     }
 
+    /** apply detected override. */
     public JurisdictionContext applyDetectedOverride(JurisdictionContext detected) {
         detected.setLocationSource(LocationSource.input_override);
         stripGenericRegion(detected);
@@ -78,6 +83,7 @@ public class JurisdictionService {
         }
     }
 
+    /** disclaimer for. */
     public String disclaimerFor(JurisdictionContext ctx) {
         return "Legally provides general legal information only, not legal advice. "
                 + "Consult a licensed lawyer in " + ctx.getCountryName() + " for your specific case.";
@@ -334,6 +340,7 @@ public class JurisdictionService {
         return firstNonBlank(request.getCountryName()) != null || code != null;
     }
 
+    /** True when country and region are known enough for legal research. */
     public boolean isResolved(JurisdictionContext ctx) {
         if (ctx == null || ctx.getLocationSource() == LocationSource.default_fallback) {
             return false;
@@ -342,6 +349,7 @@ public class JurisdictionService {
         return code != null && !code.isBlank() && !"INT".equalsIgnoreCase(code.trim());
     }
 
+    /** Throws if jurisdiction is not resolved. */
     public void requireResolved(JurisdictionContext ctx) {
         if (!isResolved(ctx)) {
             throw new IllegalArgumentException(

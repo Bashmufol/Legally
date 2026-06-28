@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Builds a short display label for history from message text or uploaded media.
+ */
 @Service
 public class UserQuestionService {
 

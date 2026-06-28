@@ -156,5 +156,8 @@ final class SubregionFromText {
         return sb.toString();
     }
 
+    /**
+     * extracted subregion.
+     */
     record ExtractedSubregion(String code, String displayName) {}
 }

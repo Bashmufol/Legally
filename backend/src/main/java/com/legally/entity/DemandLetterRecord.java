@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.UUID;
 
+/**
+ * Generated demand letter stored for session history.
+ */
 @Entity
 @Table(name = "demand_letters")
 public class DemandLetterRecord {
@@ -34,6 +37,7 @@ public class DemandLetterRecord {
     protected DemandLetterRecord() {
     }
 
+    /** Factory for a new demand letter row. */
     public static DemandLetterRecord create(
             String firebaseUid, UUID sessionId, String scenario, String facts, String letterText) {
         DemandLetterRecord r = new DemandLetterRecord();

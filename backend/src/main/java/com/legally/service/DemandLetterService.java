@@ -13,6 +13,9 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Generates demand letters via {@link LegalDocumentService} and persists them per session.
+ */
 @Service
 public class DemandLetterService {
 
@@ -26,6 +29,7 @@ public class DemandLetterService {
         this.demandLetterRecordRepository = demandLetterRecordRepository;
     }
 
+    /** Builds a demand letter document and stores it for the current session. */
     @Transactional
     public DemandLetterResponse generate(DemandLetterRequest request) throws Exception {
         LegalDocumentRequest docRequest = new LegalDocumentRequest();

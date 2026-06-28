@@ -14,11 +14,15 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/**
+ * Resets per-request LLM circuit breakers at the start of each HTTP request.
+ */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE + 10)
 public class GeminiQuotaCircuitBreakerFilter extends OncePerRequestFilter {
 
     @Override
+    /** should not filter. */
     protected boolean shouldNotFilter(HttpServletRequest request) {
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             return true;
@@ -27,6 +31,7 @@ public class GeminiQuotaCircuitBreakerFilter extends OncePerRequestFilter {
     }
 
     @Override
+    /** do filter internal. */
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,

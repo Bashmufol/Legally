@@ -6,6 +6,9 @@ import com.legally.model.LawChunk;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * POST /api/consult response body.
+ */
 public class ConsultResponse {
 
     private String summary;

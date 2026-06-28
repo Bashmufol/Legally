@@ -5,6 +5,9 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+/**
+ * LLM provider implementation for cloudflare legal.
+ */
 public class CloudflareLegalLlmProvider extends OpenAiChatLegalLlmProvider {
 
     public CloudflareLegalLlmProvider(

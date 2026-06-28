@@ -19,6 +19,7 @@ public class ContactResearchService {
         this.multiLlmContactResearch = multiLlmContactResearch;
     }
 
+    /** Runs contact research across configured LLM providers. */
     public List<ContactCard> findContacts(
             JurisdictionContext jurisdiction,
             String scenario,

@@ -3,11 +3,15 @@ package com.legally.llm;
 import com.legally.model.JurisdictionContext;
 import com.legally.model.LegalDocumentType;
 
+/**
+ * Prompt text for legal analysis and document generation.
+ */
 public final class LegalPrompts {
 
     private LegalPrompts() {
     }
 
+    /** analyze system instruction. */
     public static String analyzeSystemInstruction(JurisdictionContext jurisdiction) {
         return """
                 You are Legally, a legal INFORMATION assistant (not a lawyer).
@@ -34,6 +38,7 @@ public final class LegalPrompts {
                 jurisdiction.getRegionName());
     }
 
+    /** analyze user message. */
     public static String analyzeUserMessage(
             String userMessage, String scenario, JurisdictionContext jurisdiction) {
         String messageBlock = userMessage != null && !userMessage.isBlank()
@@ -58,6 +63,7 @@ public final class LegalPrompts {
         return base + "\n\nAttached evidence (from uploads or voice recording):\n" + mediaDigest;
     }
 
+    /** media digest prompt. */
     public static String mediaDigestPrompt(
             String userMessage, String scenario, JurisdictionContext jurisdiction) {
         String messageBlock = userMessage != null && !userMessage.isBlank()
@@ -96,6 +102,7 @@ public final class LegalPrompts {
                 """.formatted(jurisdiction.displayLabel(), researchText);
     }
 
+    /** legal document prompt. */
     public static String legalDocumentPrompt(LegalDocumentDraftRequest request) {
         LegalDocumentType documentType = request.documentType();
         JurisdictionContext jurisdiction = request.jurisdiction();
@@ -159,6 +166,7 @@ public final class LegalPrompts {
         };
     }
 
+    /** strip code fences. */
     public static String stripCodeFences(String text) {
         if (text == null) {
             return "";

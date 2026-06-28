@@ -9,6 +9,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+/**
+ * Multipart file uploads and local file serving in development.
+ */
 @RestController
 @RequestMapping("/api/uploads")
 public class UploadController {
@@ -21,6 +24,7 @@ public class UploadController {
         this.sessionService = sessionService;
     }
 
+    /** Stores a file for the current session and returns a media reference for consult requests. */
     @PostMapping
     public ResponseEntity<UploadResponse> upload(@RequestParam("file") MultipartFile file) throws Exception {
         sessionService.touchCurrentSession();
@@ -32,6 +36,7 @@ public class UploadController {
                 stored.fileName()));
     }
 
+    /** Serves files from local disk when Firebase storage is disabled. */
     @GetMapping("/files/{fileName}")
     public ResponseEntity<byte[]> serveLocal(@PathVariable String fileName) throws Exception {
         byte[] data = storageService.readLocal(fileName);

@@ -13,6 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Configuration
+/**
+ * Initializes Firebase Admin SDK when enabled.
+ */
 public class FirebaseAdminConfig {
 
     private static final Logger log = LoggerFactory.getLogger(FirebaseAdminConfig.class);

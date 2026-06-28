@@ -12,11 +12,15 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Parses and validates legal JSON from LLM text output.
+ */
 public final class LlmResponseParser {
 
     private LlmResponseParser() {
     }
 
+    /** contains json object. */
     public static boolean containsJsonObject(String rawText) {
         if (rawText == null || rawText.isBlank()) {
             return false;
@@ -27,6 +31,7 @@ public final class LlmResponseParser {
         return start >= 0 && end > start;
     }
 
+    /** parse json response. */
     public static GeminiLegalResponse parseJsonResponse(
             ObjectMapper objectMapper, String rawText, JurisdictionContext jurisdiction) throws Exception {
         String text = rawText.replace("```json", "").replace("```", "").trim();
@@ -43,6 +48,7 @@ public final class LlmResponseParser {
         return parsed;
     }
 
+    /** sources from citations. */
     public static List<LawChunk> sourcesFromCitations(
             GeminiLegalResponse response, JurisdictionContext jurisdiction, String providerPrefix) {
         String country = jurisdiction.getCountryCode() != null && !jurisdiction.getCountryCode().isBlank()
@@ -75,6 +81,7 @@ public final class LlmResponseParser {
         return chunks;
     }
 
+    /** has substantive legal content. */
     public static boolean hasSubstantiveLegalContent(GeminiLegalResponse ai) {
         if (ai == null || ai.getLegalAnalysis() == null || ai.getLegalAnalysis().isEmpty()) {
             return false;
@@ -94,6 +101,7 @@ public final class LlmResponseParser {
                 + "Consult a licensed lawyer in " + jurisdiction.getCountryName() + " for your specific case.";
     }
 
+    /** stable chunk id. */
     public static String stableChunkId(String url) {
         byte[] hash = url.getBytes(StandardCharsets.UTF_8);
         String hex = HexFormat.of().formatHex(hash, 0, Math.min(8, hash.length));

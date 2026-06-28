@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/** Unit tests for {@link JurisdictionService} text and device parsing. */
 class JurisdictionServiceTest {
 
     private final JurisdictionService service = new JurisdictionService();

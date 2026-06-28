@@ -13,6 +13,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Consultation history for the authenticated user and current session.
+ */
 @RestController
 @RequestMapping("/api/history")
 public class HistoryController {
@@ -25,12 +28,14 @@ public class HistoryController {
         this.userService = userService;
     }
 
+    /** Returns recent consultations for the current user and session. */
     @GetMapping("/consultations")
     public ResponseEntity<List<HistoryItemDto>> consultations() {
         userService.syncCurrentUser();
         return ResponseEntity.ok(consultationHistoryService.listForCurrentUser());
     }
 
+    /** Returns full stored JSON for one consultation. */
     @GetMapping("/consultations/{id}")
     public ResponseEntity<HistoryDetailDto> consultationDetail(@PathVariable UUID id) {
         userService.syncCurrentUser();

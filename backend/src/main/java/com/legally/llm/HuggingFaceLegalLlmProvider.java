@@ -5,6 +5,9 @@ import org.springframework.web.client.RestClient;
 
 import java.util.Map;
 
+/**
+ * LLM provider implementation for hugging face legal.
+ */
 public class HuggingFaceLegalLlmProvider extends OpenAiChatLegalLlmProvider {
 
     public HuggingFaceLegalLlmProvider(String apiKey, String model, RestClient restClient, ObjectMapper objectMapper) {
