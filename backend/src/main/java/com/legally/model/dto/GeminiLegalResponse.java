@@ -5,16 +5,22 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 /**
- * API response payload.
+ * Structured legal analysis JSON parsed from LLM output (Gemini or fallback providers).
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class GeminiLegalResponse {
 
     private String summary = "";
+
+    /** Individual legal points, each with an optional citation block. */
     private List<LegalPoint> legalAnalysis = new ArrayList<>();
+
     private List<String> steps = new ArrayList<>();
+
+    /** Hints passed to contact research (e.g. legal_aid, police). */
     private List<String> suggestedContactTags = new ArrayList<>();
+
     private boolean demandLetterEligible;
     private String confidence = "medium";
     private String disclaimer = "";
@@ -75,10 +81,13 @@ public class GeminiLegalResponse {
         this.disclaimer = disclaimer;
     }
 
+    /** One legal point with citation metadata for the client and source enrichment. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class LegalPoint {
         private String point = "";
         private Citation citation = new Citation();
+
+        /** Links this point to a {@link com.legally.model.LawChunk} id when present. */
         private String chunkId;
 
         public String getPoint() {
@@ -106,11 +115,14 @@ public class GeminiLegalResponse {
         }
     }
 
+    /** Statute or web source reference attached to a legal point. */
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Citation {
         private String instrument = "";
         private String section = "";
         private String jurisdiction = "FEDERAL";
+
+        /** Official URL; may be filled from {@link com.legally.model.LawChunk} after parsing. */
         private String sourceUrl;
 
         public String getInstrument() {

@@ -3,7 +3,7 @@ package com.legally.model.dto;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * API request payload.
+ * POST /api/demand-letter request body.
  */
 public class DemandLetterRequest {
 

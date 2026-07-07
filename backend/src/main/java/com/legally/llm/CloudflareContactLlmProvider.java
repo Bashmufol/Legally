@@ -6,7 +6,7 @@ import org.springframework.web.client.RestClient;
 import java.util.Map;
 
 /**
- * LLM provider implementation for cloudflare contact.
+ * Contact research via Cloudflare Workers AI (OpenAI-compatible endpoint).
  */
 public class CloudflareContactLlmProvider extends OpenAiChatContactLlmProvider {
 

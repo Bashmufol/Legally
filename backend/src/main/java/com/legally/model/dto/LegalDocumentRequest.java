@@ -3,10 +3,11 @@ package com.legally.model.dto;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * API request payload.
+ * POST /api/documents/generate request body.
  */
 public class LegalDocumentRequest {
 
+    /** Enum name from {@link com.legally.model.LegalDocumentType}. */
     @NotBlank
     private String documentType;
 

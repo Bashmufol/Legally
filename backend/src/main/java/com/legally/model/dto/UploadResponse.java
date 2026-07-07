@@ -1,12 +1,15 @@
 package com.legally.model.dto;
 
 /**
- * API response payload.
+ * POST /api/uploads response; reference the client sends in {@link ConsultRequest.MediaRef}.
  */
 public class UploadResponse {
 
+    /** Public URL or firebase:// path for later byte reads. */
     private String url;
     private String mimeType;
+
+    /** {@code firebase} or {@code local}. */
     private String storageType;
     private String fileName;
 

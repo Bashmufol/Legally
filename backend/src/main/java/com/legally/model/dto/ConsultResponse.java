@@ -7,21 +7,43 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * POST /api/consult response body.
+ * POST /api/consult response body returned to the web client.
  */
 public class ConsultResponse {
 
+    /** Plain-language overview of the legal situation. */
     private String summary;
+
+    /** Legal points with citations, same structure as the LLM JSON output. */
     private List<GeminiLegalResponse.LegalPoint> legalAnalysis = new ArrayList<>();
+
+    /** Practical next steps for the user. */
     private List<String> steps = new ArrayList<>();
+
+    /** NGOs and agencies when contact research ran successfully. */
     private List<ContactCard> contacts = new ArrayList<>();
+
+    /** Cited sources mapped from LLM chunk ids. */
     private List<LawChunk> sources = new ArrayList<>();
+
+    /** True when the scenario may support generating a demand letter. */
     private boolean demandLetterEligible;
+
+    /** low, medium, or high based on LLM self-assessment. */
     private String confidence;
+
     private String disclaimer;
+
+    /** Resolved country name shown in the UI. */
     private String jurisdictionCountry;
+
+    /** Resolved state or region; omitted when only country is known. */
     private String jurisdictionRegion;
+
+    /** How jurisdiction was resolved (device, input_override, etc.). */
     private String locationSource;
+
+    /** Legacy flag; always false in the current API. */
     private boolean corpusLimited;
 
     public String getSummary() {

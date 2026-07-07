@@ -1,7 +1,7 @@
 package com.legally.model.dto;
 
 /**
- * API response payload.
+ * POST /api/documents/generate response body.
  */
 public class LegalDocumentResponse {
 

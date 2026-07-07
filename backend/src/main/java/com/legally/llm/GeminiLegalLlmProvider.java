@@ -32,26 +32,26 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
         this.objectMapper = objectMapper;
     }
 
-    @Override
     /** Provider identifier matching LLM_PROVIDER_ORDER entries. */
+    @Override
     public String id() {
         return "gemini";
     }
 
-    @Override
     /** True when API key and model are present. */
+    @Override
     public boolean isConfigured() {
         return geminiApiClient.isConfigured();
     }
 
-    @Override
     /** True when raw media bytes can be sent to this provider. */
+    @Override
     public boolean supportsNativeMultimodal() {
         return true;
     }
 
+    /** Calls Gemini with Google Search grounding and parses structured legal JSON. */
     @Override
-    /** Calls the provider for legal analysis. */
     public Optional<LlmAnalysisOutcome> analyze(
             String userMessage,
             String scenario,
@@ -70,6 +70,7 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
             if (!LlmResponseParser.hasSubstantiveLegalContent(parsed)) {
                 return Optional.empty();
             }
+            // Convert citation URLs into LawChunk rows for the client sources list.
             List<LawChunk> sources = LlmResponseParser.sourcesFromCitations(parsed, jurisdiction, id());
             return Optional.of(new LlmAnalysisOutcome(parsed, sources, id()));
         } catch (Exception e) {
@@ -83,8 +84,8 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
         }
     }
 
+    /** Drafts document body text for the multi-LLM document chain. */
     @Override
-    /** Drafts a legal document when this provider supports it. */
     public Optional<String> generateLegalDocument(LegalDocumentDraftRequest request) {
         if (!isConfigured()) {
             return Optional.empty();
@@ -134,6 +135,7 @@ public class GeminiLegalLlmProvider implements LegalLlmProvider {
         try {
             parsed = LlmResponseParser.parseJsonResponse(objectMapper, text, jurisdiction);
         } catch (Exception parseEx) {
+            // google_search often returns prose; one reformat call enforces JSON shape.
             log.debug("Gemini google_search returned non-JSON ({} chars), reformatting: {}",
                     text.length(), parseEx.getMessage());
             try {

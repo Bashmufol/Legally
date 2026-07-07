@@ -20,10 +20,11 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.util.*;
 
-@Service
 /**
  * Gemini API calls for jurisdiction detection, fallbacks, and media helpers.
+ * Used when the legal LLM chain needs grounding, transcripts, or structured error responses.
  */
+@Service
 public class GeminiService {
 
     private static final Logger log = LoggerFactory.getLogger(GeminiService.class);
@@ -63,7 +64,10 @@ public class GeminiService {
         return r;
     }
 
-    /** build jurisdiction unresolved response. */
+    /**
+     * Early exit when device location and user text do not yield a usable jurisdiction.
+     * Guides the client to enable location or name country and region explicitly.
+     */
     public GeminiLegalResponse buildJurisdictionUnresolvedResponse() {
         GeminiLegalResponse r = new GeminiLegalResponse();
         r.setSummary(
@@ -85,7 +89,9 @@ public class GeminiService {
         return r;
     }
 
-    /** build media processing failed response. */
+    /**
+     * When voice, video, or document bytes cannot be read or digested for the legal chain.
+     */
     public GeminiLegalResponse buildMediaProcessingFailedResponse(JurisdictionContext jurisdiction) {
         String area = jurisdiction != null && jurisdiction.displayLabel() != null
                 ? jurisdiction.displayLabel()
@@ -119,6 +125,7 @@ public class GeminiService {
             return defaultNoInfoSteps(jurisdiction);
         }
 
+        // Ask Gemini for practical next steps without asserting what the law is.
         String prompt = """
                 The user asked about a legal situation but no official sources could be retrieved.
                 Do NOT state what the law is. Do NOT invent statutes, cases, or phone numbers.
@@ -162,6 +169,7 @@ public class GeminiService {
                 log.warn("Could not generate no-info suggestions: {}", e.getMessage());
             }
         }
+        // Static steps when Gemini is unavailable or returns unusable JSON.
         return defaultNoInfoSteps(jurisdiction);
     }
 
@@ -210,6 +218,7 @@ public class GeminiService {
             String responseBody = callGemini(apiKey, body);
             return parseWebResponse(responseBody, jurisdiction, webSources);
         } catch (ResourceAccessException e) {
+            // Network failure: return excerpt-only summary without another Gemini call.
             log.warn("Gemini API unreachable for web research: {}", e.getMessage());
             return webFallbackResponse(userMessage, jurisdiction, webSources);
         }
@@ -285,6 +294,7 @@ public class GeminiService {
         try {
             String responseBody = callGemini(apiKey, body);
             JsonNode root = objectMapper.readTree(responseBody);
+            // Grounding responses may split text across multiple parts.
             StringBuilder textBuilder = new StringBuilder();
             for (JsonNode part : root.path("candidates").path(0).path("content").path("parts")) {
                 if (part.has("text")) {
@@ -310,7 +320,10 @@ public class GeminiService {
         }
     }
 
-    /** detect jurisdiction from inputs. */
+    /**
+     * Uses Gemini to detect when the user explicitly names a country or region different from device location.
+     * Returns empty when the question is generic or detection fails (never guesses from stereotypes).
+     */
     public Optional<JurisdictionContext> detectJurisdictionFromInputs(
             String userMessage,
             List<ConsultRequest.MediaRef> media,
@@ -386,6 +399,7 @@ public class GeminiService {
             ctx.setCountryName(parsed.path("countryName").asText(countryCode));
             String regionCode = parsed.path("regionCode").asText("").trim().toUpperCase(Locale.ROOT);
             String regionName = parsed.path("regionName").asText("").trim();
+            // Treat "General" as country-wide, not a specific region code.
             if ("GENERAL".equalsIgnoreCase(regionCode) || "General".equalsIgnoreCase(regionName)) {
                 regionCode = "";
                 regionName = "";
@@ -418,6 +432,7 @@ public class GeminiService {
                 .body(String.class);
     }
 
+    /** Loads bytes from storage and attaches them as Gemini inlineData parts. */
     private void attachMedia(List<Map<String, Object>> parts, ConsultRequest.MediaRef ref) {
         try {
             byte[] bytes = storageService.readBytes(ref.getUrl(), ref.getStorageType());
@@ -425,6 +440,7 @@ public class GeminiService {
             String base64 = Base64.getEncoder().encodeToString(bytes);
             parts.add(Map.of("inlineData", Map.of("mimeType", mime, "data", base64)));
         } catch (Exception e) {
+            // Keep the prompt usable even when one attachment fails to load.
             parts.add(Map.of("text", "[Could not load attached media: " + ref.getUrl() + "]"));
         }
     }
@@ -478,6 +494,7 @@ public class GeminiService {
                 filtered.add(point);
                 continue;
             }
+            // Match by URL when the model omitted chunkId but cited the correct source.
             if (point.getCitation() != null && point.getCitation().getSourceUrl() != null) {
                 for (WebLegalSource s : webSources) {
                     if (s.getUrl().equals(point.getCitation().getSourceUrl())) {
@@ -656,6 +673,7 @@ public class GeminiService {
                 filtered.add(point);
                 continue;
             }
+            // Fallback: match instrument + section when chunkId was hallucinated.
             String key = point.getCitation().getInstrument() + "|" + point.getCitation().getSection();
             if (byInstrument.containsKey(key)) {
                 point.setChunkId(byInstrument.get(key).getId());

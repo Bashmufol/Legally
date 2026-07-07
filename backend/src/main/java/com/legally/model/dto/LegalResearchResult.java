@@ -5,14 +5,17 @@ import com.legally.model.LawChunk;
 import java.util.List;
 
 /**
- * legal research result.
+ * Outcome of {@link com.legally.llm.MultiLlmLegalResearchService#research}.
  */
 public class LegalResearchResult {
 
     private final GeminiLegalResponse response;
     private final List<LawChunk> sources;
+
+    /** True when a provider returned substantive legal content. */
     private final boolean informationFound;
-    /** When false, consult should not run contact research (e.g. media could not be read at all). */
+
+    /** When false, consult skips contact research (e.g. media could not be read). */
     private final boolean suggestContacts;
 
     public LegalResearchResult(

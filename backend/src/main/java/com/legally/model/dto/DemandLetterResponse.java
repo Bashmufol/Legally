@@ -1,7 +1,7 @@
 package com.legally.model.dto;
 
 /**
- * API response payload.
+ * POST /api/demand-letter response body.
  */
 public class DemandLetterResponse {
 

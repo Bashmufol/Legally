@@ -40,7 +40,9 @@ public class MultiLlmLegalResearchService {
         this.googleSpeechToTextService = googleSpeechToTextService;
     }
 
-    /** Runs legal research across configured LLM providers. */
+    /**
+     * Runs the legal LLM chain: enriches media, tries each provider in order, then falls back to Gemini templates.
+     */
     public LegalResearchResult research(
             String messageText,
             String scenario,
@@ -51,6 +53,7 @@ public class MultiLlmLegalResearchService {
         Optional<String> mediaDigest = Optional.empty();
         Optional<String> speechTranscript = Optional.empty();
         if (hasMedia) {
+            // Speech transcript is appended to text for providers that do not accept raw audio.
             speechTranscript = googleSpeechToTextService.transcribeAudio(media);
             speechTranscript.ifPresent(t ->
                     log.info("Speech-to-Text transcript ready ({} chars)", t.length()));
@@ -73,6 +76,7 @@ public class MultiLlmLegalResearchService {
             String effectiveMessage = messageWithTranscript;
             List<ConsultRequest.MediaRef> effectiveMedia = media;
             if (!provider.supportsNativeMultimodal()) {
+                // OpenAI-compatible providers get a text digest instead of binary attachments.
                 effectiveMessage = LegalPrompts.analyzeUserMessageWithMediaDigest(
                         messageWithTranscript, scenario, jurisdiction, mediaDigest.orElse(null));
                 effectiveMedia = Collections.emptyList();
@@ -95,6 +99,7 @@ public class MultiLlmLegalResearchService {
 
         log.info("All LLM providers exhausted for {} — returning no-information response", jurisdiction.displayLabel());
         if (hasMedia && mediaDigest.isEmpty() && speechTranscript.isEmpty()) {
+            // Neither digest nor transcript succeeded; media itself is the blocker.
             GeminiLegalResponse mediaFailed =
                     geminiService.buildMediaProcessingFailedResponse(jurisdiction);
             return new LegalResearchResult(mediaFailed, List.of(), false, false);

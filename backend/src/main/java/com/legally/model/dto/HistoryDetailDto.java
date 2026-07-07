@@ -1,7 +1,7 @@
 package com.legally.model.dto;
 
 /**
- * API response payload.
+ * Full consultation stored for GET /api/history/consultations/{id}.
  */
 public class HistoryDetailDto {
 
@@ -9,6 +9,8 @@ public class HistoryDetailDto {
     private String scenario;
     private String question;
     private String createdAt;
+
+    /** Deserialised {@link ConsultResponse} JSON from the database. */
     private ConsultResponse response;
 
     public String getId() {

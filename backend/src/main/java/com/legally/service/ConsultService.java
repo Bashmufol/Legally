@@ -61,6 +61,7 @@ public class ConsultService {
         validateConsultInput(request);
         String messageText = normalizedMessage(request);
 
+        // Voice transcript may contain place names needed for jurisdiction resolution.
         String jurisdictionMessage = enrichJurisdictionMessageWithVoice(messageText, request.getMedia());
         ConsultRequest jurisdictionRequest = copyForJurisdiction(request, jurisdictionMessage);
         JurisdictionContext jurisdiction = jurisdictionService.resolve(jurisdictionRequest);
@@ -125,6 +126,7 @@ public class ConsultService {
         response.setLocationSource(jurisdiction.getLocationSource().name());
         response.setCorpusLimited(false);
         response.setSources(chunks);
+        // Skip contact lookup when research failed or returned no substantive law.
         if (includeContacts) {
             response.setContacts(contactResearchService.findContacts(
                     jurisdiction,
@@ -228,6 +230,7 @@ public class ConsultService {
             }
             LawChunk chunk = point.getChunkId() != null ? byId.get(point.getChunkId()) : null;
             if (chunk == null) {
+                // Match by instrument + section when chunkId is missing from the model output.
                 for (LawChunk c : chunks) {
                     if (Objects.equals(c.getInstrument(), point.getCitation().getInstrument())
                             && Objects.equals(c.getSection(), point.getCitation().getSection())) {
@@ -250,6 +253,7 @@ public class ConsultService {
         }
 
         String message = request.getMessage() != null ? request.getMessage() : "";
+        // Regex-based extraction runs before Gemini to avoid an extra API call when text is explicit.
         Optional<JurisdictionContext> fromText = jurisdictionService.extractFromUserMessage(message);
         if (fromText.isPresent()
                 && jurisdictionService.isExplicitUserJurisdiction(fromText.get(), jurisdiction)) {

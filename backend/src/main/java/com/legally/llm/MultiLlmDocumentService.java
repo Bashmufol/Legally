@@ -9,10 +9,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 
-@Service
 /**
  * Generates legal documents through the legal LLM provider chain.
  */
+@Service
 public class MultiLlmDocumentService {
 
     private static final Logger log = LoggerFactory.getLogger(MultiLlmDocumentService.class);
@@ -23,7 +23,9 @@ public class MultiLlmDocumentService {
         this.providers = providers;
     }
 
-    /** Generates content for the request. */
+    /**
+     * Tries each configured provider in order; falls back to {@link LegalDocumentFallback} when all fail.
+     */
     public String generate(LegalDocumentDraftRequest request) {
         for (LegalLlmProvider provider : providers) {
             if (!provider.isConfigured()) {
@@ -40,6 +42,7 @@ public class MultiLlmDocumentService {
             }
         }
 
+        // Static template ensures the endpoint always returns something usable.
         log.warn("All LLM providers failed for document {}; using static template", request.documentType());
         return LegalDocumentFallback.generate(request);
     }

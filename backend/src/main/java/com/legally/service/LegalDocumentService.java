@@ -53,6 +53,7 @@ public class LegalDocumentService {
         jurisdictionProbe.setRegionName(request.getRegionName());
 
         JurisdictionContext jurisdiction = jurisdictionService.resolve(jurisdictionProbe);
+        // Document endpoint has no media; only re-detect from facts text when device did not set location.
         if (jurisdiction.getLocationSource() != JurisdictionContext.LocationSource.input_override
                 && jurisdiction.getLocationSource() != JurisdictionContext.LocationSource.device) {
             final JurisdictionContext baseline = jurisdiction;
@@ -76,6 +77,7 @@ public class LegalDocumentService {
                 jurisdiction);
         String content = multiLlmDocumentService.generate(draftRequest);
 
+        // Replace bracket placeholders with user-supplied party names.
         content = applyPartyPlaceholders(content, request);
 
         return new LegalDocumentResponse(

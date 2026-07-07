@@ -1,7 +1,7 @@
 package com.legally.model.dto;
 
 /**
- * API response payload.
+ * One row in GET /api/history/consultations.
  */
 public class HistoryItemDto {
 

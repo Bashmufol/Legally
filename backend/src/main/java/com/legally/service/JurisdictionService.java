@@ -47,6 +47,7 @@ public class JurisdictionService {
     public JurisdictionContext resolve(ConsultRequest request) {
         String message = request.getMessage() != null ? request.getMessage() : "";
 
+        // User-named place in the message takes precedence over device geolocation.
         Optional<JurisdictionContext> fromMessage = extractFromText(message);
         if (fromMessage.isPresent()) {
             JurisdictionContext ctx = fromMessage.get();
@@ -67,7 +68,7 @@ public class JurisdictionService {
         return defaultContext();
     }
 
-    /** apply detected override. */
+    /** Marks Gemini- or text-detected jurisdiction as a user override and normalises region fields. */
     public JurisdictionContext applyDetectedOverride(JurisdictionContext detected) {
         detected.setLocationSource(LocationSource.input_override);
         stripGenericRegion(detected);
@@ -83,7 +84,7 @@ public class JurisdictionService {
         }
     }
 
-    /** disclaimer for. */
+    /** Standard disclaimer appended when the LLM response omits one. */
     public String disclaimerFor(JurisdictionContext ctx) {
         return "Legally provides general legal information only, not legal advice. "
                 + "Consult a licensed lawyer in " + ctx.getCountryName() + " for your specific case.";
@@ -132,6 +133,7 @@ public class JurisdictionService {
             return us;
         }
 
+        // Longest alias first avoids matching "Lagos" inside longer state names incorrectly.
         for (Map.Entry<String, String> e : NG_ALIASES_LONGEST_FIRST) {
             if (containsNgStateMention(lower, e.getKey())) {
                 return Optional.of(nigeriaRegionContext(e.getValue()));

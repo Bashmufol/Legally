@@ -46,7 +46,9 @@ public class LegalMediaDigestService {
         return key != null && !key.isBlank();
     }
 
-    /** build digest. */
+    /**
+     * Produces a plain-text summary of all attachments for providers that only accept text input.
+     */
     public Optional<String> buildDigest(
             String userMessage,
             String scenario,

@@ -13,7 +13,7 @@ public final class LegalDocumentFallback {
     private LegalDocumentFallback() {
     }
 
-    /** Generates content for the request. */
+    /** Static template used when every LLM provider fails to generate a document. */
     public static String generate(LegalDocumentDraftRequest request) {
         LegalDocumentType documentType = request.documentType();
         String title = request.title();
